@@ -161,141 +161,84 @@ function updateTodayDate() {
 
 // 渲染日历
 function renderCalendar() {
-    try {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    // 更新月份标题
+    const monthYearStr = new Date(year, month, 1).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
+    document.getElementById('currentMonthYear').textContent = monthYearStr;
+    
+    // 获取当月第一天
+    const firstDayOfMonth = new Date(year, month, 1);
+    // 获取当月最后一天
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    
+    // 计算上月需要显示的天数
+    const firstDayWeekday = firstDayOfMonth.getDay(); // 0 (周日) 到 6 (周六)
+    
+    // 计算总共需要的单元格数量
+    const daysInMonth = lastDayOfMonth.getDate();
+    const totalCells = Math.ceil((daysInMonth + firstDayWeekday) / 7) * 7;
+    
+    // 清空日历
+    const calendarDays = document.getElementById('calendarDays');
+    calendarDays.innerHTML = '';
+    
+    // 填充日历单元格
+    for (let i = 0; i < totalCells; i++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
         
-        // 更新月份标题
-        const monthYearStr = new Date(year, month, 1).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' });
-        document.getElementById('currentMonthYear').textContent = monthYearStr;
+        const cellDate = new Date(year, month, i - firstDayWeekday + 1);
+        const dateStr = formatDateString(cellDate);
         
-        // 获取当月第一天
-        const firstDayOfMonth = new Date(year, month, 1);
-        // 获取当月最后一天
-        const lastDayOfMonth = new Date(year, month + 1, 0);
+        // 设置日期数字
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = cellDate.getDate();
+        dayCell.appendChild(dayNumber);
         
-        // 计算上月需要显示的天数
-        const firstDayWeekday = firstDayOfMonth.getDay(); // 0 (周日) 到 6 (周六)
+        // 如果是其他月份的日期
+        if (cellDate.getMonth() !== month) {
+            dayCell.classList.add('other-month');
+        }
         
-        // 计算总共需要的单元格数量
-        const daysInMonth = lastDayOfMonth.getDate();
-        const totalCells = Math.ceil((daysInMonth + firstDayWeekday) / 7) * 7;
+        // 如果是周末
+        if (cellDate.getDay() === 0 || cellDate.getDay() === 6) {
+            dayCell.classList.add('weekend');
+        }
         
-        // 清空日历
-        const calendarDays = document.getElementById('calendarDays');
-        calendarDays.innerHTML = '';
+        // 如果是今天
+        if (cellDate.toDateString() === new Date().toDateString()) {
+            dayCell.classList.add('today');
+        }
         
-        // 填充日历单元格
-        for (let i = 0; i < totalCells; i++) {
-            const dayCell = document.createElement('div');
-            dayCell.className = 'calendar-day';
-            
-            const cellDate = new Date(year, month, i - firstDayWeekday + 1);
-            const dateStr = formatDateString(cellDate);
-            
-            // 设置数据属性，用于显示日期提示
-            dayCell.dataset.date = dateStr;
-            
-            // 添加日期提示元素，确保不影响其他元素交互
-            const dateTooltip = document.createElement('div');
-            dateTooltip.className = 'date-tooltip';
-            dateTooltip.textContent = dateStr;
-            dateTooltip.style.pointerEvents = 'none'; // 确保不影响鼠标事件
-            
-            // 如果有打卡记录，添加到提示文本
-            if (attendanceData[dateStr] && attendanceData[dateStr].checkedIn) {
-                dateTooltip.textContent += " (已打卡)";
-            }
-            
-            dayCell.appendChild(dateTooltip);
-            
-            // 设置日期数字
-            const dayNumber = document.createElement('div');
-            dayNumber.className = 'day-number';
-            dayNumber.textContent = cellDate.getDate();
-            dayCell.appendChild(dayNumber);
-            
-            // 如果是其他月份的日期
-            if (cellDate.getMonth() !== month) {
-                dayCell.classList.add('other-month');
-            }
-            
-            // 如果是周末
-            if (cellDate.getDay() === 0 || cellDate.getDay() === 6) {
-                dayCell.classList.add('weekend');
-            }
-            
-            // 如果是今天
-            if (cellDate.toDateString() === new Date().toDateString()) {
-                dayCell.classList.add('today');
-            }
-            
-            // 如果有考勤记录
-            if (attendanceData[dateStr]) {
-                const isCheckedIn = attendanceData[dateStr].checkedIn;
-                const isMakeup = attendanceData[dateStr].isMakeup;
-                const hasOvertime = attendanceData[dateStr].overtime && parseFloat(attendanceData[dateStr].overtime) > 0;
-                const hasLeave = attendanceData[dateStr].leave && parseFloat(attendanceData[dateStr].leave) > 0;
-                
-                // 根据加班和请假状态设置不同的样式
-                if (hasOvertime && hasLeave) {
-                    // 同时有加班和请假，添加双色边框
-                    dayCell.classList.add('has-overtime-and-leave');
-                    
-                    // 添加单独的打卡标记元素，而不是依赖::after伪元素
-                    if (isCheckedIn) {
-                        const checkMark = document.createElement('div');
-                        checkMark.className = 'explicit-check-mark';
-                        checkMark.textContent = '✓';
-                        dayCell.appendChild(checkMark);
-                    }
-                } else if (hasOvertime) {
-                    // 只有加班
-                    dayCell.classList.add('has-overtime');
-                    
-                    // 正常添加打卡标记类
-                    if (isCheckedIn) {
-                        if (isMakeup) {
-                            dayCell.classList.add('makeup');
-                        } else {
-                            dayCell.classList.add('checked-in');
-                        }
-                    }
-                } else if (hasLeave) {
-                    // 只有请假
-                    dayCell.classList.add('has-leave');
-                    
-                    // 正常添加打卡标记类
-                    if (isCheckedIn) {
-                        if (isMakeup) {
-                            dayCell.classList.add('makeup');
-                        } else {
-                            dayCell.classList.add('checked-in');
-                        }
-                    }
+        // 如果有考勤记录
+        if (attendanceData[dateStr]) {
+            if (attendanceData[dateStr].checkedIn) {
+                // 如果是补打卡
+                if (attendanceData[dateStr].isMakeup) {
+                    dayCell.classList.add('makeup');
                 } else {
-                    // 既没有加班也没有请假，只处理打卡状态
-                    if (isCheckedIn) {
-                        if (isMakeup) {
-                            dayCell.classList.add('makeup');
-                        } else {
-                            dayCell.classList.add('checked-in');
-                        }
-                    }
+                    dayCell.classList.add('checked-in');
                 }
             }
             
-            // 添加点击事件，显示日期详情
-            dayCell.addEventListener('click', function(e) {
-                // 确保点击事件不被tooltip阻止
-                e.stopPropagation();
-                showDayDetails(cellDate);
-            });
-            
-            calendarDays.appendChild(dayCell);
+            // 区分加班和请假
+            if (attendanceData[dateStr].overtime) {
+                const overtime = parseFloat(attendanceData[dateStr].overtime);
+                if (overtime > 0) {
+                    dayCell.classList.add('has-overtime');
+                } else if (overtime < 0) {
+                    dayCell.classList.add('has-leave');
+                }
+            }
         }
-    } catch (error) {
-        console.error('渲染日历错误:', error);
+        
+        // 添加点击事件
+        dayCell.addEventListener('click', () => showDayDetails(cellDate));
+        
+        calendarDays.appendChild(dayCell);
     }
 }
 
