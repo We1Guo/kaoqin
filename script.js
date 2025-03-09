@@ -23,14 +23,19 @@ document.addEventListener('DOMContentLoaded', function() {
     updateStats();
     loadSettings();
     initPieceworkSelectors(); // 初始化计件工资选择器
-    updatePieceworkStats(); // 更新计件工资统计
     
     // 初始化模态框
     const dayDetailModal = new bootstrap.Modal(document.getElementById('dayDetailModal'));
     
-    // 初始化统计报表的工资类型选择
-    document.getElementById('salaryType').addEventListener('change', function() {
-        toggleSalaryTypeDisplay(this.value);
+    // 初始化统计报表的工资类型切换按钮
+    document.getElementById('attendanceTypeBtn').addEventListener('click', function() {
+        toggleSalaryTypeDisplay('attendance');
+        updateButtonState('attendance');
+    });
+    
+    document.getElementById('pieceworkTypeBtn').addEventListener('click', function() {
+        toggleSalaryTypeDisplay('piecework');
+        updateButtonState('piecework');
     });
     
     // 绑定导航切换事件
@@ -54,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pieceworkTab').addEventListener('click', (e) => {
         e.preventDefault();
         showPage('pieceworkPage');
-        updatePieceworkStats();
         // 设置默认日期为今天
         document.getElementById('pieceworkDate').valueAsDate = new Date();
     });
@@ -455,7 +459,12 @@ function initStatsSelectors() {
 function generateCustomStats() {
     const year = document.getElementById('statsYear').value;
     const month = document.getElementById('statsMonth').value;
-    const salaryType = document.getElementById('salaryType').value;
+    
+    // 获取当前激活的工资类型
+    let salaryType = 'attendance';
+    if (document.getElementById('pieceworkTypeBtn').classList.contains('btn-primary')) {
+        salaryType = 'piecework';
+    }
     
     if (month === 'all') {
         updateYearlyStats(year, salaryType);
@@ -695,19 +704,19 @@ function formatDateString(date) {
     return `${year}-${month}-${day}`;
 }
 
-// 新增：初始化计件工资选择器
+// 初始化计件工资选择器
 function initPieceworkSelectors() {
     // 初始化年份选择器
     const currentYear = new Date().getFullYear();
-    const yearSelect = document.getElementById('pieceworkYear');
-    yearSelect.innerHTML = '';
-    
-    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = i + '年';
-        if (i === currentYear) option.selected = true;
-        yearSelect.appendChild(option);
+    const yearSelect = document.getElementById('statsYear');
+    if (yearSelect.options.length === 0) {
+        for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i + '年';
+            if (i === currentYear) option.selected = true;
+            yearSelect.appendChild(option);
+        }
     }
     
     // 设置默认日期为今天
@@ -761,66 +770,27 @@ function savePieceworkRecord() {
     pieceworkData[dateStr].push(newRecord);
     localStorage.setItem('pieceworkData', JSON.stringify(pieceworkData));
     
-    // 清空表单
-    document.getElementById('pieceworkType').value = '';
-    document.getElementById('pieceworkCount').value = '1';
-    document.getElementById('pieceworkNote').value = '';
-    // 不清空价格，因为用户可能会连续录入同样价格的产品
+    // 显示最近添加的记录
+    const totalSalary = count * price;
+    const recordDetails = document.getElementById('recentRecordDetails');
+    recordDetails.innerHTML = `${formatShortDate(dateStr)} | ${type} | ${count}件 | 单价: ¥${price.toFixed(2)} | 合计: ¥${totalSalary.toFixed(2)}`;
     
-    // 更新统计
-    updatePieceworkStats();
+    const alertElement = document.querySelector('.recent-record-alert');
+    alertElement.style.display = 'block';
+    
+    // 清空表单，但保留产品型号和单价（方便连续录入）
+    document.getElementById('pieceworkCount').value = '';
+    document.getElementById('pieceworkNote').value = '';
     
     alert('计件工资记录已保存！');
 }
 
-// 新增：更新计件工资统计数据
-function updatePieceworkStats() {
-    // 获取当前年月
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-    
-    // 更新当月统计
-    updateMonthlyPieceworkStats(currentYear, currentMonth);
-}
-
-// 新增：生成计件工资统计
-function generatePieceworkStats() {
-    const yearSelect = document.getElementById('pieceworkYear');
-    const monthSelect = document.getElementById('pieceworkMonth');
-    
-    const year = parseInt(yearSelect.value);
-    const monthVal = monthSelect.value;
-    
-    if (monthVal === 'all') {
-        updateYearlyPieceworkStats(year);
-    } else {
-        updateMonthlyPieceworkStats(year, parseInt(monthVal));
-    }
-}
-
-// 新增：更新月度计件工资统计
-function updateMonthlyPieceworkStats(year, month) {
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, month + 1, 0);
-    
-    updatePieceworkStatsForPeriod(startDate, endDate);
-}
-
-// 新增：更新年度计件工资统计
-function updateYearlyPieceworkStats(year) {
-    const startDate = new Date(year, 0, 1);
-    const endDate = new Date(year, 11, 31);
-    
-    updatePieceworkStatsForPeriod(startDate, endDate);
-}
-
-// 新增：更新指定时间段的计件工资统计
+// 更新指定时间段的计件工资统计
 function updatePieceworkStatsForPeriod(startDate, endDate) {
     let totalPieces = 0;
     let totalSalary = 0;
     let productTypes = new Set();
-    let records = [];
-    let typeStats = {}; // 按类型统计
+    const pieceworkRecords = [];
     
     // 统计数据
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
@@ -832,20 +802,10 @@ function updatePieceworkStatsForPeriod(startDate, endDate) {
                 const recordSalary = record.count * record.price;
                 totalSalary += recordSalary;
                 productTypes.add(record.type);
-                records.push({
+                pieceworkRecords.push({
                     date: dateStr,
                     record: record
                 });
-                
-                // 按类型统计
-                if (!typeStats[record.type]) {
-                    typeStats[record.type] = {
-                        count: 0,
-                        salary: 0
-                    };
-                }
-                typeStats[record.type].count += record.count;
-                typeStats[record.type].salary += recordSalary;
             });
         }
     }
@@ -855,126 +815,16 @@ function updatePieceworkStatsForPeriod(startDate, endDate) {
         totalSalary += settings.pieceworkBonus;
     }
     
-    // 更新统计卡片
-    document.getElementById('pieceworkTypes').textContent = productTypes.size;
-    document.getElementById('pieceworkTotal').textContent = totalPieces;
-    document.getElementById('pieceworkSalary').textContent = `¥${totalSalary.toFixed(2)}`;
+    // 更新计件统计卡片
+    document.getElementById('reportPieceworkTypes').textContent = productTypes.size;
+    document.getElementById('reportPieceworkTotal').textContent = totalPieces;
+    document.getElementById('reportPieceworkSalary').textContent = `¥${totalSalary.toFixed(2)}`;
     
-    // 渲染记录表格
-    renderPieceworkRecords(records);
-    
-    // 渲染产品类型统计
-    renderProductTypeStats(typeStats);
+    // 渲染计件记录表
+    renderReportPieceworkRecords(pieceworkRecords);
 }
 
-// 新增：渲染计件工资记录表格
-function renderPieceworkRecords(records) {
-    const tbody = document.getElementById('pieceworkRecords');
-    tbody.innerHTML = '';
-    
-    // 按日期倒序排序
-    records.sort((a, b) => {
-        if (a.date === b.date) {
-            return new Date(b.record.timestamp) - new Date(a.record.timestamp);
-        }
-        return new Date(b.date) - new Date(a.date);
-    });
-    
-    records.forEach(item => {
-        const { date, record } = item;
-        const row = document.createElement('tr');
-        
-        // 计算该记录的工资
-        const salary = record.count * record.price;
-        
-        row.innerHTML = `
-            <td>${formatShortDate(date)}</td>
-            <td>${record.type}</td>
-            <td>${record.count}</td>
-            <td>${record.note || '-'}</td>
-            <td>¥${salary.toFixed(2)}</td>
-            <td>
-                <button class="btn btn-sm btn-danger delete-piecework" data-date="${date}" data-id="${record.id}">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
-        
-        tbody.appendChild(row);
-    });
-    
-    // 绑定删除按钮事件
-    document.querySelectorAll('.delete-piecework').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const date = this.getAttribute('data-date');
-            const id = parseInt(this.getAttribute('data-id'));
-            deletePieceworkRecord(date, id);
-        });
-    });
-}
-
-// 新增：格式化简短日期（如：03-21）
-function formatShortDate(dateStr) {
-    const parts = dateStr.split('-');
-    return `${parts[1]}-${parts[2]}`;
-}
-
-// 新增：删除计件工资记录
-function deletePieceworkRecord(dateStr, recordId) {
-    if (confirm('确定要删除这条记录吗？')) {
-        if (pieceworkData[dateStr]) {
-            // 过滤出除了要删除的记录之外的所有记录
-            pieceworkData[dateStr] = pieceworkData[dateStr].filter(record => record.id !== recordId);
-            
-            // 如果该日期下没有记录了，删除该日期的键
-            if (pieceworkData[dateStr].length === 0) {
-                delete pieceworkData[dateStr];
-            }
-            
-            // 保存到本地存储
-            localStorage.setItem('pieceworkData', JSON.stringify(pieceworkData));
-            
-            // 更新统计
-            updatePieceworkStats();
-            
-            alert('记录已删除！');
-        }
-    }
-}
-
-// 新增：渲染产品类型统计
-function renderProductTypeStats(typeStats) {
-    // 在表格底部添加产品类型统计信息
-    const tbody = document.getElementById('pieceworkRecords');
-    
-    // 如果有类型统计数据，添加一个分隔行
-    if (Object.keys(typeStats).length > 0) {
-        const separatorRow = document.createElement('tr');
-        separatorRow.className = 'table-secondary';
-        separatorRow.innerHTML = `
-            <td colspan="6" class="text-center fw-bold">
-                <i class="bi bi-bar-chart-fill"></i> 产品类型统计
-            </td>
-        `;
-        tbody.appendChild(separatorRow);
-        
-        // 按类型添加统计行
-        Object.entries(typeStats).forEach(([type, stats]) => {
-            const typeRow = document.createElement('tr');
-            typeRow.className = 'table-light';
-            typeRow.innerHTML = `
-                <td colspan="2" class="fw-bold">${type}</td>
-                <td class="fw-bold">${stats.count}</td>
-                <td>-</td>
-                <td class="fw-bold">¥${stats.salary.toFixed(2)}</td>
-                <td>-</td>
-            `;
-            tbody.appendChild(typeRow);
-        });
-    }
-}
-
-// 渲染统计报表中的计件工资记录表格
+// 渲染计件工资记录表格
 function renderReportPieceworkRecords(records) {
     const tbody = document.getElementById('reportPieceworkRecords');
     tbody.innerHTML = '';
@@ -1125,4 +975,53 @@ function updatePieceworkStatsInReport(startDate, endDate) {
     
     // 渲染计件记录表
     renderReportPieceworkRecords(pieceworkRecords);
+}
+
+// 更新按钮状态
+function updateButtonState(activeType) {
+    const attendanceBtn = document.getElementById('attendanceTypeBtn');
+    const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
+    
+    if (activeType === 'attendance') {
+        attendanceBtn.classList.add('btn-primary');
+        attendanceBtn.classList.remove('btn-outline-primary');
+        pieceworkBtn.classList.add('btn-outline-primary');
+        pieceworkBtn.classList.remove('btn-primary');
+    } else {
+        pieceworkBtn.classList.add('btn-primary');
+        pieceworkBtn.classList.remove('btn-outline-primary');
+        attendanceBtn.classList.add('btn-outline-primary');
+        attendanceBtn.classList.remove('btn-primary');
+    }
+}
+
+// 新增：格式化简短日期（如：03-21）
+function formatShortDate(dateStr) {
+    const parts = dateStr.split('-');
+    return `${parts[1]}-${parts[2]}`;
+}
+
+// 新增：删除计件工资记录
+function deletePieceworkRecord(dateStr, recordId) {
+    if (confirm('确定要删除这条记录吗？')) {
+        if (pieceworkData[dateStr]) {
+            // 过滤出除了要删除的记录之外的所有记录
+            pieceworkData[dateStr] = pieceworkData[dateStr].filter(record => record.id !== recordId);
+            
+            // 如果该日期下没有记录了，删除该日期的键
+            if (pieceworkData[dateStr].length === 0) {
+                delete pieceworkData[dateStr];
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('pieceworkData', JSON.stringify(pieceworkData));
+            
+            alert('记录已删除！');
+            
+            // 如果在统计报表页面，更新当前统计
+            if (document.getElementById('statsPage').classList.contains('active')) {
+                generateCustomStats();
+            }
+        }
+    }
 }

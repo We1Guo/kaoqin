@@ -25,10 +25,10 @@
                             <a class="nav-link active" href="#" id="calendarTab">日历打卡</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" id="statsTab">统计报表</a>
+                            <a class="nav-link" href="#" id="pieceworkTab">计件工资</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" id="pieceworkTab">计件工资</a>
+                            <a class="nav-link" href="#" id="statsTab">统计报表</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="#" id="settingsTab">设置</a>
@@ -122,13 +122,21 @@
                             <option value="10">11月</option>
                             <option value="11">12月</option>
                         </select>
-                        <select id="salaryType" class="form-select stats-selector">
-                            <option value="attendance">打卡工资</option>
-                            <option value="piecework">计件工资</option>
-                        </select>
                         <button class="btn btn-primary" id="generateStats">生成报表</button>
                     </div>
                     <h2>工作统计</h2>
+                </div>
+                
+                <!-- 工资类型切换按钮 -->
+                <div class="salary-type-toggle mb-4">
+                    <div class="btn-group w-100" role="group" aria-label="工资类型切换">
+                        <button type="button" class="btn btn-lg btn-primary active" id="attendanceTypeBtn">
+                            <i class="bi bi-calendar-check"></i> 打卡工资
+                        </button>
+                        <button type="button" class="btn btn-lg btn-outline-primary" id="pieceworkTypeBtn">
+                            <i class="bi bi-box-seam"></i> 计件工资
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 打卡工资统计区域 -->
@@ -315,78 +323,12 @@
                         <button id="savePiecework" class="btn btn-primary w-100">保存记录</button>
                     </div>
                     
-                    <hr class="my-4">
-                    
-                    <div class="piecework-stats">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h3>计件统计</h3>
-                            <div class="period-selector">
-                                <select id="pieceworkYear" class="form-select stats-selector">
-                                    <!-- 年份选项将由JS动态填充 -->
-                                </select>
-                                <select id="pieceworkMonth" class="form-select stats-selector">
-                                    <option value="all">全年</option>
-                                    <option value="0">1月</option>
-                                    <option value="1">2月</option>
-                                    <option value="2">3月</option>
-                                    <option value="3">4月</option>
-                                    <option value="4">5月</option>
-                                    <option value="5">6月</option>
-                                    <option value="6">7月</option>
-                                    <option value="7">8月</option>
-                                    <option value="8">9月</option>
-                                    <option value="9">10月</option>
-                                    <option value="10">11月</option>
-                                    <option value="11">12月</option>
-                                </select>
-                                <button id="generatePieceworkStats" class="btn btn-primary">生成统计</button>
-                            </div>
+                    <div class="piecework-recent-records mt-4">
+                        <h4>最近添加的记录</h4>
+                        <div class="recent-record-alert alert alert-success" style="display: none;">
+                            <strong>成功添加记录！</strong> <span id="recentRecordDetails"></span>
                         </div>
-                        
-                        <div class="stats-cards">
-                            <div class="stat-card">
-                                <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
-                                <div class="stat-content">
-                                    <span class="stat-value" id="pieceworkTypes">0</span>
-                                    <span class="stat-label">产品种类</span>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon"><i class="bi bi-list-check"></i></div>
-                                <div class="stat-content">
-                                    <span class="stat-value" id="pieceworkTotal">0</span>
-                                    <span class="stat-label">总计件数</span>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
-                                <div class="stat-content">
-                                    <span class="stat-value" id="pieceworkSalary">¥0</span>
-                                    <span class="stat-label">计件工资</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="piecework-history mt-4">
-                            <h4>记录历史</h4>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>日期</th>
-                                            <th>类型</th>
-                                            <th>数量</th>
-                                            <th>备注</th>
-                                            <th>工资(元)</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="pieceworkRecords">
-                                        <!-- 记录将通过JS动态添加 -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <p class="text-muted">计件工资的详细统计可在"统计报表"中查看</p>
                     </div>
                 </div>
             </div>
