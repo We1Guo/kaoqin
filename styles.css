@@ -111,6 +111,8 @@ body {
 .calendar-day .day-number {
     font-size: 0.9rem;
     font-weight: bold;
+    align-self: flex-start; /* 确保日期在左上角 */
+    margin-bottom: auto; /* 推动打卡标记到底部 */
 }
 
 .calendar-day.today {
@@ -126,10 +128,11 @@ body {
     content: "✓";
     position: absolute;
     bottom: 2px;
-    right: 5px;
+    right: 5px; /* 确保打卡标记在右下角 */
     color: var(--success-color);
     font-size: 1.2rem;
     font-weight: bold;
+    z-index: 5; /* 确保显示在其他元素之上 */
 }
 
 .calendar-day.makeup {
@@ -141,10 +144,11 @@ body {
     content: "✓";
     position: absolute;
     bottom: 2px;
-    right: 5px;
+    right: 5px; /* 确保补打卡标记在右下角 */
     color: var(--warning-color);
     font-size: 1.2rem;
     font-weight: bold;
+    z-index: 5; /* 确保显示在其他元素之上 */
 }
 
 .calendar-day.weekend {
@@ -155,17 +159,17 @@ body {
     opacity: 0.3;
 }
 
-/* 加班标记 - 顶部绿色线条 */
+/* 加班标记 - 顶部绿色线条，使用!important确保悬停时不消失 */
 .calendar-day.has-overtime {
-    border-top: 3px solid var(--success-color);
+    border-top: 3px solid var(--success-color) !important;
 }
 
-/* 请假标记 - 顶部红色线条 */
+/* 请假标记 - 顶部红色线条，使用!important确保悬停时不消失 */
 .calendar-day.has-leave {
-    border-top: 3px solid var(--danger-color);
+    border-top: 3px solid var(--danger-color) !important;
 }
 
-/* 同时有加班和请假 */
+/* 同时有加班和请假，使用伪元素并设置高z-index确保不被其他元素覆盖 */
 .calendar-day.has-overtime-and-leave {
     position: relative;
 }
@@ -179,6 +183,7 @@ body {
     width: 50%;
     height: 3px;
     background-color: var(--success-color);
+    z-index: 10; /* 高z-index确保悬停时不消失 */
 }
 
 /* 请假部分(右半) */
@@ -190,6 +195,7 @@ body {
     width: 50%;
     height: 3px;
     background-color: var(--danger-color);
+    z-index: 10; /* 高z-index确保悬停时不消失 */
 }
 
 /* 单独添加日期提示，避免与线条冲突 */
@@ -219,16 +225,19 @@ body {
 
 /* 移动端适配 */
 @media (max-width: 768px) {
+    /* 内容区域在移动端减少内边距，更高效利用空间 */
     .content-area {
         padding: 10px;
     }
     
+    /* 日历打卡页面 */
     .calendar-container {
         margin: 0;
         padding: 0;
         background-color: white;
         border-radius: 10px;
         overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     /* 标题样式 */
@@ -238,14 +247,17 @@ body {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background-color: #fff;
+        border-bottom: 1px solid #f0f0f0;
     }
     
     .current-date-header h2 {
-        font-size: 24px;
+        font-size: 20px;
         margin: 0;
         padding: 0;
         text-align: center;
         flex: 1;
+        color: #333;
     }
     
     .weekdays {
@@ -269,6 +281,7 @@ body {
         background-color: #f8f9fa;
     }
     
+    /* 优化日历单元格在移动端的显示 */
     .calendar-day {
         min-height: 45px;
         height: auto;
@@ -276,18 +289,18 @@ body {
         border: 1px solid #dee2e6;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
         position: relative;
         background-color: white;
     }
     
+    /* 确保日期数字在左上角 */
     .calendar-day .day-number {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: normal;
-        text-align: center;
-        padding-top: 8px;
-        width: 100%;
+        text-align: left;
+        padding: 2px 0 0 3px;
+        margin: 0;
+        align-self: flex-start;
     }
     
     /* 非当月日期 */
@@ -307,37 +320,37 @@ body {
         border: 1px solid #1890ff;
     }
     
-    /* 日历单元格中的打卡标记调整 */
+    /* 日历单元格中的打卡标记调整 - 确保在右下角 */
     .calendar-day.checked-in::after {
         content: "✓";
         position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 15px;
+        bottom: 2px;
+        right: 3px;
+        font-size: 14px;
         color: #28a745; /* 绿色打卡标记 */
         font-weight: bold;
+        z-index: 5;
     }
     
     .calendar-day.makeup::after {
         content: "✓";
         position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 15px;
+        bottom: 2px;
+        right: 3px;
+        font-size: 14px;
         color: #ffc107; /* 黄色补卡标记 */
         font-weight: bold;
+        z-index: 5;
     }
     
     /* 加班标记 - 确保在移动端正确显示 */
     .calendar-day.has-overtime {
-        border-top: 3px solid #28a745;
+        border-top: 3px solid #28a745 !important;
     }
     
     /* 请假标记 - 确保在移动端正确显示 */
     .calendar-day.has-leave {
-        border-top: 3px solid #dc3545;
+        border-top: 3px solid #dc3545 !important;
     }
     
     /* 同时有加班和请假 */
@@ -349,6 +362,7 @@ body {
         width: 50%;
         height: 3px;
         background-color: #28a745;
+        z-index: 10;
     }
     
     .calendar-day.has-overtime-and-leave:after {
@@ -359,94 +373,83 @@ body {
         width: 50%;
         height: 3px;
         background-color: #dc3545;
+        z-index: 10;
     }
     
-    /* 确保显式打卡标记在移动端也能正确显示 */
-    .explicit-check-mark {
-        position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 15px;
-        font-weight: bold;
-    }
-    
-    /* 打卡面板样式 */
+    /* 美化打卡面板 */
     .check-in-panel {
         margin-top: 15px;
-        padding: 20px;
+        padding: 15px;
         border-radius: 10px;
         background-color: white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .today-date {
-        font-size: 20px;
+        font-size: 18px;
         margin-bottom: 15px;
         text-align: center;
         color: #333;
-        font-weight: bold;
+        font-weight: 500;
     }
     
-    /* 打卡按钮 */
     .check-buttons {
-        margin-top: 15px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
+        margin-bottom: 15px;
     }
     
     .check-buttons button {
-        margin: 0;
-        padding: 12px 0;
-        font-size: 18px;
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
         border-radius: 6px;
     }
     
-    /* 加班请假时长输入 */
+    /* 优化加班/请假控件 */
     .overtime-control {
-        margin-top: 20px;
-        margin-bottom: 10px;
+        margin-top: 15px;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 15px;
     }
     
     .overtime-control label {
         display: block;
-        font-size: 16px;
-        margin-bottom: 8px;
-        color: #333;
+        font-size: 15px;
+        margin-bottom: 5px;
+        color: #555;
     }
     
     .form-control {
+        width: 100%;
         padding: 10px;
         font-size: 16px;
-        border-radius: 6px;
         border: 1px solid #ced4da;
+        border-radius: 6px;
+        margin-bottom: 10px;
     }
     
     .record-hours-container {
         display: flex;
         gap: 10px;
-        margin-top: 15px;
     }
     
     .record-hours-container button {
         flex: 1;
+        padding: 10px;
+        font-size: 15px;
         border-radius: 6px;
-        padding: 12px 0;
-        font-size: 16px;
     }
     
-    /* 底部图例 - 确保单行显示 */
+    /* 优化图例显示 */
     .legend-container {
-        margin-top: 15px;
-        padding: 8px 5px;
+        margin: 15px 0;
+        padding: 10px;
         display: flex;
-        flex-wrap: nowrap;
         justify-content: space-between;
-        gap: 2px;
         background-color: white;
         border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         overflow-x: auto;
+        white-space: nowrap;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none; /* Firefox */
     }
@@ -458,11 +461,9 @@ body {
     .legend-item {
         display: flex;
         align-items: center;
-        font-size: 11px;
+        font-size: 12px;
+        padding: 0 5px;
         color: #555;
-        flex-shrink: 0;
-        margin-right: 3px;
-        padding: 0 2px;
     }
     
     .legend-item .checked-legend {
@@ -478,26 +479,28 @@ body {
     }
     
     .legend-item .overtime-legend {
-        width: 12px;
+        display: inline-block;
+        width: 10px;
         height: 3px;
         background-color: #28a745;
         margin-right: 3px;
     }
     
     .legend-item .leave-legend {
-        width: 12px;
+        display: inline-block;
+        width: 10px;
         height: 3px;
         background-color: #dc3545;
         margin-right: 3px;
     }
     
-    /* 底部版权信息 */
+    /* 底部版权信息优化 */
     .footer-info {
         text-align: center;
+        font-size: 12px;
+        color: #999;
+        margin-top: 15px;
         padding: 10px 0;
-        font-size: 14px;
-        color: #777;
-        margin-top: 20px;
     }
     
     /* 统计卡片布局 - 两行显示 */
