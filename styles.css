@@ -545,97 +545,331 @@ body {
     
     /* 日历打卡页面 */
     .calendar-container {
-        margin: 0 -5px; /* 负边距，让日历在移动端能扩展到边缘 */
+        margin: 0;
+        padding: 0;
+        background-color: white;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    /* 标题样式 */
+    .current-date-header {
+        margin: 0;
+        padding: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .current-date-header h2 {
+        font-size: 24px;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        flex: 1;
+    }
+    
+    .weekdays {
+        background-color: #6366f1; /* 蓝紫色背景，与截图一致 */
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        color: white;
+        font-weight: bold;
     }
     
     .weekdays div {
         font-size: 14px;
-        padding: 5px 0;
+        padding: 8px 0;
+        text-align: center;
     }
     
     .calendar-days {
-        grid-gap: 2px; /* 增加日历单元格间隔 */
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-gap: 0; /* 无间距 */
+        background-color: #f8f9fa;
     }
     
     .calendar-day {
-        min-height: 45px; /* 调整高度 */
+        min-height: 45px;
         height: auto;
-        padding: 2px;
+        padding: 0;
+        border: 1px solid #dee2e6;
         display: flex;
-        justify-content: center;
         flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
         position: relative;
+        background-color: white;
     }
     
     .calendar-day .day-number {
-        font-size: 14px;
+        font-size: 18px;
+        font-weight: normal;
         text-align: center;
-        padding-top: 5px; /* 为打卡标记留出空间 */
+        padding-top: 8px;
+        width: 100%;
+    }
+    
+    /* 非当月日期 */
+    .calendar-day.other-month {
+        color: #adb5bd;
+        background-color: #f8f9fa;
+    }
+    
+    /* 周末样式 */
+    .calendar-day.weekend {
+        background-color: #fff8f8; /* 非常浅的红色背景 */
+    }
+    
+    /* 今天日期高亮 */
+    .calendar-day.today {
+        background-color: #e6f7ff; /* 非常浅的蓝色背景 */
+        border: 1px solid #1890ff;
     }
     
     /* 日历单元格中的打卡标记调整 */
-    .calendar-day.checked-in::after,
+    .calendar-day.checked-in::after {
+        content: "✓";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 15px;
+        color: #28a745; /* 绿色打卡标记 */
+        font-weight: bold;
+    }
+    
     .calendar-day.makeup::after {
-        top: 2px;
-        right: 2px;
-        font-size: 14px;
-        color: #FFD700; /* 黄色打卡标记，更易于在移动端看到 */
+        content: "✓";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 15px;
+        color: #ffc107; /* 黄色补卡标记 */
+        font-weight: bold;
     }
     
     /* 确保显式打卡标记在移动端也能正确显示 */
     .explicit-check-mark {
-        top: 2px;
-        right: 2px;
-        font-size: 14px;
-        color: #FFD700;
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 15px;
+        font-weight: bold;
     }
     
-    /* 修改加班请假标识，使其在移动端更明显 */
-    .calendar-day.has-overtime {
-        border-top: 3px solid var(--success-color);
+    /* 加班请假标识，确保在移动端显示 */
+    .calendar-day.has-overtime::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #28a745;
     }
     
     .calendar-day.has-leave::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
         height: 3px;
+        background-color: #dc3545;
     }
     
-    .calendar-day.has-overtime-and-leave::before,
+    .calendar-day.has-overtime-and-leave::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background-color: #28a745;
+    }
+    
     .calendar-day.has-overtime-and-leave::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
         height: 3px;
+        background-color: #dc3545;
     }
     
-    /* 日历控制按钮样式 */
-    .current-date-header {
-        margin-bottom: 10px;
-    }
-    
-    .current-date-header h2 {
-        font-size: 1.2rem;
-    }
-    
-    /* 打卡界面调整 */
+    /* 打卡面板样式 */
     .check-in-panel {
         margin-top: 15px;
-        padding: 15px;
+        padding: 20px;
+        border-radius: 10px;
+        background-color: white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     
+    .today-date {
+        font-size: 20px;
+        margin-bottom: 15px;
+        text-align: center;
+        color: #333;
+        font-weight: bold;
+    }
+    
+    /* 打卡按钮 */
     .check-buttons {
+        margin-top: 15px;
+        display: flex;
         flex-direction: column;
+        gap: 15px;
     }
     
     .check-buttons button {
+        margin: 0;
+        padding: 12px 0;
+        font-size: 18px;
+        border-radius: 6px;
+    }
+    
+    /* 加班请假时长输入 */
+    .overtime-control {
+        margin-top: 20px;
         margin-bottom: 10px;
     }
     
-    /* 统计卡片 */
+    .overtime-control label {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 8px;
+        color: #333;
+    }
+    
+    .form-control {
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+    }
+    
+    .record-hours-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .record-hours-container button {
+        flex: 1;
+        border-radius: 6px;
+        padding: 12px 0;
+        font-size: 16px;
+    }
+    
+    /* 底部图例 - 确保单行显示 */
+    .legend-container {
+        margin-top: 15px;
+        padding: 8px 5px;
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 2px;
+        background-color: white;
+        border-radius: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    .legend-container::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        color: #555;
+        flex-shrink: 0;
+        margin-right: 3px;
+        padding: 0 2px;
+    }
+    
+    .legend-item .checked-legend {
+        color: #28a745;
+        margin-right: 3px;
+        font-weight: bold;
+    }
+    
+    .legend-item .makeup-legend {
+        color: #ffc107;
+        margin-right: 3px;
+        font-weight: bold;
+    }
+    
+    .legend-item .overtime-legend {
+        width: 12px;
+        height: 3px;
+        background-color: #28a745;
+        margin-right: 3px;
+    }
+    
+    .legend-item .leave-legend {
+        width: 12px;
+        height: 3px;
+        background-color: #dc3545;
+        margin-right: 3px;
+    }
+    
+    /* 底部版权信息 */
+    .footer-info {
+        text-align: center;
+        padding: 10px 0;
+        font-size: 14px;
+        color: #777;
+        margin-top: 20px;
+    }
+    
+    /* 统计页面调整 */
+    .stats-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 10px;
+    }
+    
+    .stats-cards .stat-card:nth-child(3) {
+        grid-column: 1 / span 2;
+    }
+    
+    /* 统计卡片的内部样式调整 */
     .stat-card {
         padding: 10px;
-        width: 100%;
-        margin-bottom: 15px;
+        margin-bottom: 0;
+        width: auto;
+        display: flex;
+        align-items: center;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
+        margin-right: 10px;
+        color: #4361ee;
     }
     
     .stat-value {
         font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 2px;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #666;
     }
     
     /* 数据统计页面选择器样式 */
@@ -708,140 +942,53 @@ body {
     .piecework-type-toggle .btn i {
         margin-right: 3px;
     }
+    
+    /* 计件薪资统计卡片样式 - 确保与考勤统计卡片布局一致 */
+    .piecework-summary .stats-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 10px;
+    }
+    
+    .piecework-summary .stats-cards .stat-card:nth-child(3) {
+        grid-column: 1 / span 2;
+    }
+    
+    /* 产品统计卡片样式 */
+    .product-stats-container {
+        margin-top: 15px;
+    }
+    
+    .product-stat-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+    }
 }
 
-/* 计件薪资页面样式 */
-.piecework-container {
-    padding: 20px;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.piecework-entry {
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.period-selector {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.piecework-stats {
-    background-color: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.piecework-history h4 {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e9ecef;
-}
-
-/* 数据统计页面中的工资提示样式 */
-#estimatedSalary {
-    cursor: help;
-}
-
-/* 计件薪资参数样式 */
-#pieceworkSettings {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 10px;
-    margin-top: 15px;
-}
-
-/* 数据统计中的计件薪资部分样式 */
-.piecework-summary {
-    margin-top: 30px;
-    background-color: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.piecework-summary h3 {
-    color: #0d6efd;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dee2e6;
-    padding-bottom: 10px;
-}
-
-.piecework-records h4 {
-    margin-bottom: 15px;
-    color: #495057;
-}
-
-/* 统计部分中的分隔线 */
-.stats-separator {
-    border-top: 2px dashed #dee2e6;
-    margin: 30px 0;
-}
-
-/* 总工资卡片样式 */
-#totalSalary {
-    color: #198754;
-    font-weight: bold;
-}
-
-/* 最近添加的记录样式 */
-.piecework-recent-records {
-    margin-top: 30px;
-    background-color: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
-    border: 1px solid #f0f0f0;
-}
-
-.piecework-recent-records h4 {
-    color: var(--primary-color);
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    font-weight: 600;
-    position: relative;
-    display: inline-block;
-}
-
-.piecework-recent-records h4::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary-color), transparent);
-    border-radius: 3px;
-}
-
-.recent-record-alert {
-    margin: 0 0 15px 0;
-    border-left: 4px solid var(--success-color);
-    background-color: #f8fff9;
-    color: var(--success-color);
-    padding: 12px 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-#recentRecordDetails {
-    margin-top: 5px;
-    line-height: 1.5;
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 在小屏幕上自动换行显示 */
 @media (max-width: 576px) {
     #recentRecordDetails {
+        margin-top: 10px;
+        padding: 10px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+    }
+    
+    .product-stats-header,
+    .product-stat-item {
+        display: grid;
+        grid-template-columns: 40% 20% 15% 25%;
+        padding: 8px 5px;
+    }
+    
+    .product-header-type,
+    .product-type {
+        font-size: 0.9rem;
+    }
+    
+    .product-percent {
         word-break: break-word;
     }
 }
