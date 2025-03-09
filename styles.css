@@ -184,13 +184,35 @@ body {
     color: #aaa;
 }
 
-/* 加班指示 */
+/* 加班指示 - 使用伪元素代替border */
 .calendar-day.has-overtime {
-    border-top: 3px solid var(--success-color);
-    border-bottom: none;
+    position: relative;
+    border-top: none;
 }
 
-/* 请假指示 */
+.calendar-day.has-overtime::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--success-color);
+    z-index: 10;
+}
+
+.calendar-day.has-overtime:hover::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--success-color);
+    z-index: 10;
+}
+
+/* 请假指示 - 在顶部显示红色线条 */
 .calendar-day.has-leave {
     position: relative;
 }
@@ -203,15 +225,26 @@ body {
     width: 100%;
     height: 3px;
     background-color: var(--danger-color);
+    z-index: 10;
 }
 
-/* 同时有加班和请假的样式 */
+.calendar-day.has-leave:hover::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--danger-color);
+    z-index: 10;
+}
+
+/* 同时有加班和请假 - 顶部一半绿色一半红色 */
 .calendar-day.has-overtime-and-leave {
     position: relative;
-    border-top: none;
 }
 
-/* 加班指示（左边绿色） */
+/* 加班部分(左半部分) */
 .calendar-day.has-overtime-and-leave::before {
     content: "";
     position: absolute;
@@ -220,15 +253,21 @@ body {
     width: 50%;
     height: 3px;
     background-color: var(--success-color);
-    z-index: 1;
+    z-index: 10;
 }
 
-/* 请假指示（右边红色） - 使用border-right代替::after，避免与打卡标记冲突 */
-.calendar-day.has-overtime-and-leave {
-    border-right: none; /* 确保之前没有设置过border-right */
-    border-top-right-radius: 0; /* 确保上边右侧是平的，让红色线条能够显示 */
+.calendar-day.has-overtime-and-leave:hover::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 3px;
+    background-color: var(--success-color);
+    z-index: 10;
 }
 
+/* 请假部分(右半部分) */
 .calendar-day.has-overtime-and-leave::after {
     content: "";
     position: absolute;
@@ -237,7 +276,18 @@ body {
     width: 50%;
     height: 3px;
     background-color: var(--danger-color);
-    z-index: 1;
+    z-index: 10;
+}
+
+.calendar-day.has-overtime-and-leave:hover::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 3px;
+    background-color: var(--danger-color);
+    z-index: 10;
 }
 
 /* 同时有加班和请假的日子的打卡标记 */
@@ -328,21 +378,21 @@ body {
 /* 日历提示说明 */
 .calendar-tips {
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 0.8rem;
 }
 
 .tip-item {
     display: flex;
     align-items: center;
-    gap: 5px;
+    margin: 0 10px;
 }
 
 .tip-icon {
-    width: 16px;
-    height: 16px;
     display: inline-block;
+    margin-right: 5px;
 }
 
 .checked-in-icon {
@@ -351,32 +401,29 @@ body {
 }
 
 .makeup-icon {
-    color: #ffc107;
+    color: var(--warning-color);
     font-weight: bold;
 }
 
 .overtime-icon {
-    width: 16px;
-    height: 5px;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
     background-color: var(--success-color);
-    border-radius: 2px;
-    position: relative;
-    top: -3px;
 }
 
 .leave-icon {
-    width: 16px;
-    height: 5px;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
     background-color: var(--danger-color);
-    border-radius: 2px;
 }
 
-/* 新增：同时有加班和请假的图标 */
 .overtime-leave-icon {
-    width: 16px;
-    height: 5px;
     position: relative;
-    border-radius: 2px;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
     overflow: hidden;
 }
 
@@ -661,47 +708,6 @@ body {
         font-weight: bold;
     }
     
-    /* 加班请假标识，确保在移动端显示 */
-    .calendar-day.has-overtime::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background-color: #28a745;
-    }
-    
-    .calendar-day.has-leave::before {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background-color: #dc3545;
-    }
-    
-    .calendar-day.has-overtime-and-leave::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background-color: #28a745;
-    }
-    
-    .calendar-day.has-overtime-and-leave::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 3px;
-        background-color: #dc3545;
-    }
-    
     /* 打卡面板样式 */
     .check-in-panel {
         margin-top: 15px;
@@ -831,7 +837,7 @@ body {
         margin-top: 20px;
     }
     
-    /* 统计页面调整 */
+    /* 统计卡片布局 - 两行显示 */
     .stats-cards {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -843,11 +849,9 @@ body {
         grid-column: 1 / span 2;
     }
     
-    /* 统计卡片的内部样式调整 */
     .stat-card {
         padding: 10px;
         margin-bottom: 0;
-        width: auto;
         display: flex;
         align-items: center;
         background-color: white;
@@ -857,13 +861,12 @@ body {
     .stat-icon {
         font-size: 1.5rem;
         margin-right: 10px;
-        color: #4361ee;
+        color: var(--primary-color);
     }
     
     .stat-value {
         font-size: 1.2rem;
         font-weight: bold;
-        color: #333;
         margin-bottom: 2px;
     }
     
@@ -964,6 +967,53 @@ body {
         padding: 10px;
         margin-bottom: 8px;
         border-radius: 8px;
+    }
+    
+    /* 日历提示在移动端显示为单行 */
+    .calendar-tips {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        margin-bottom: 15px;
+        font-size: 0.7rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 5px 0;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    .calendar-tips::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+    
+    .tip-item {
+        display: flex;
+        align-items: center;
+        margin: 0 5px;
+        flex-shrink: 0;
+    }
+    
+    .tip-icon {
+        margin-right: 3px;
+    }
+    
+    .overtime-icon, .leave-icon, .overtime-leave-icon {
+        width: 8px;
+        height: 8px;
+    }
+    
+    /* 确保移动端日历单元格的加班/请假标记也能正确显示 */
+    .calendar-day.has-overtime::before,
+    .calendar-day.has-overtime:hover::before,
+    .calendar-day.has-leave::before,
+    .calendar-day.has-leave:hover::before,
+    .calendar-day.has-overtime-and-leave::before,
+    .calendar-day.has-overtime-and-leave:hover::before,
+    .calendar-day.has-overtime-and-leave::after,
+    .calendar-day.has-overtime-and-leave:hover::after {
+        height: 3px;
+        z-index: 10;
     }
 }
 
