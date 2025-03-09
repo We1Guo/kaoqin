@@ -96,6 +96,7 @@ body {
     transition: background-color 0.2s;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* 防止内容溢出 */
 }
 
 .calendar-day:hover {
@@ -537,10 +538,85 @@ body {
 
 /* 移动端样式优化 */
 @media (max-width: 768px) {
+    /* 内容区域在移动端减少内边距，更高效利用空间 */
+    .content-area {
+        padding: 10px;
+    }
+    
     /* 日历打卡页面 */
+    .calendar-container {
+        margin: 0 -5px; /* 负边距，让日历在移动端能扩展到边缘 */
+    }
+    
+    .weekdays div {
+        font-size: 14px;
+        padding: 5px 0;
+    }
+    
+    .calendar-days {
+        grid-gap: 2px; /* 增加日历单元格间隔 */
+    }
+    
     .calendar-day {
-        width: 40px;
-        height: 40px;
+        min-height: 45px; /* 调整高度 */
+        height: auto;
+        padding: 2px;
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        position: relative;
+    }
+    
+    .calendar-day .day-number {
+        font-size: 14px;
+        text-align: center;
+        padding-top: 5px; /* 为打卡标记留出空间 */
+    }
+    
+    /* 日历单元格中的打卡标记调整 */
+    .calendar-day.checked-in::after,
+    .calendar-day.makeup::after {
+        top: 2px;
+        right: 2px;
+        font-size: 14px;
+        color: #FFD700; /* 黄色打卡标记，更易于在移动端看到 */
+    }
+    
+    /* 确保显式打卡标记在移动端也能正确显示 */
+    .explicit-check-mark {
+        top: 2px;
+        right: 2px;
+        font-size: 14px;
+        color: #FFD700;
+    }
+    
+    /* 修改加班请假标识，使其在移动端更明显 */
+    .calendar-day.has-overtime {
+        border-top: 3px solid var(--success-color);
+    }
+    
+    .calendar-day.has-leave::before {
+        height: 3px;
+    }
+    
+    .calendar-day.has-overtime-and-leave::before,
+    .calendar-day.has-overtime-and-leave::after {
+        height: 3px;
+    }
+    
+    /* 日历控制按钮样式 */
+    .current-date-header {
+        margin-bottom: 10px;
+    }
+    
+    .current-date-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    /* 打卡界面调整 */
+    .check-in-panel {
+        margin-top: 15px;
+        padding: 15px;
     }
     
     .check-buttons {
@@ -621,11 +697,6 @@ body {
     .piecework-entry label {
         font-size: 14px;
         margin-bottom: 4px;
-    }
-    
-    .date-selector h5 {
-        font-size: 16px;
-        margin-bottom: 8px;
     }
     
     /* 计件薪资子类型切换按钮样式 */
