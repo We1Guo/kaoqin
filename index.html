@@ -22,16 +22,16 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#" id="calendarTab">日历打卡</a>
+                            <a class="nav-link active" href="#" id="calendarTab">日历考勤</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" id="pieceworkTab">计件工资</a>
+                            <a class="nav-link" href="#" id="pieceworkTab">计件薪资</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" id="statsTab">统计报表</a>
+                            <a class="nav-link" href="#" id="statsTab">数据统计</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" id="settingsTab">设置</a>
+                            <a class="nav-link" href="#" id="settingsTab">系统设置</a>
                         </li>
                     </ul>
                 </div>
@@ -97,44 +97,50 @@
                         <span class="tip-icon leave-icon"></span>
                         <span class="tip-text">有请假</span>
                     </div>
+                    <div class="tip-item">
+                        <span class="tip-icon overtime-leave-icon"></span>
+                        <span class="tip-text">加班和请假</span>
+                    </div>
                 </div>
             </div>
 
             <!-- 统计报表页面 -->
             <div id="statsPage" class="page">
                 <div class="stats-header">
+                    <h2>工时与薪资统计</h2>
                     <div class="date-selector">
-                        <select id="statsYear" class="form-select stats-selector">
-                            <!-- 年份选项将由JS动态填充 -->
-                        </select>
-                        <select id="statsMonth" class="form-select stats-selector">
-                            <option value="all">全年统计</option>
-                            <option value="0">1月</option>
-                            <option value="1">2月</option>
-                            <option value="2">3月</option>
-                            <option value="3">4月</option>
-                            <option value="4">5月</option>
-                            <option value="5">6月</option>
-                            <option value="6">7月</option>
-                            <option value="7">8月</option>
-                            <option value="8">9月</option>
-                            <option value="9">10月</option>
-                            <option value="10">11月</option>
-                            <option value="11">12月</option>
-                        </select>
-                        <button class="btn btn-primary" id="generateStats">生成报表</button>
+                        <div class="date-selector-row">
+                            <select id="statsYear" class="form-select stats-selector">
+                                <!-- 年份选项将由JS动态填充 -->
+                            </select>
+                            <select id="statsMonth" class="form-select stats-selector">
+                                <option value="all">全年统计</option>
+                                <option value="0">1月</option>
+                                <option value="1">2月</option>
+                                <option value="2">3月</option>
+                                <option value="3">4月</option>
+                                <option value="4">5月</option>
+                                <option value="5">6月</option>
+                                <option value="6">7月</option>
+                                <option value="7">8月</option>
+                                <option value="8">9月</option>
+                                <option value="9">10月</option>
+                                <option value="10">11月</option>
+                                <option value="11">12月</option>
+                            </select>
+                            <button class="btn btn-primary" id="generateStats">查询统计</button>
+                        </div>
                     </div>
-                    <h2>工作统计</h2>
                 </div>
                 
                 <!-- 工资类型切换按钮 -->
                 <div class="salary-type-toggle mb-4">
                     <div class="btn-group w-100" role="group" aria-label="工资类型切换">
-                        <button type="button" class="btn btn-lg btn-primary active" id="attendanceTypeBtn">
-                            <i class="bi bi-calendar-check"></i> 打卡工资
+                        <button type="button" class="btn btn-lg" id="attendanceTypeBtn">
+                            <i class="bi bi-calendar-check"></i> 考勤薪资
                         </button>
-                        <button type="button" class="btn btn-lg btn-outline-primary" id="pieceworkTypeBtn">
-                            <i class="bi bi-box-seam"></i> 计件工资
+                        <button type="button" class="btn btn-lg" id="pieceworkTypeBtn">
+                            <i class="bi bi-box-seam"></i> 计件薪资
                         </button>
                     </div>
                 </div>
@@ -185,14 +191,14 @@
                     </div>
                 </div>
                 
-                <!-- 计件工资统计区域 -->
+                <!-- 计件薪资统计区域 -->
                 <div id="pieceworkStatsSection" style="display: none;">
                     <div class="stats-cards">
                         <div class="stat-card">
                             <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
                             <div class="stat-content">
                                 <span class="stat-value" id="reportPieceworkTypes">0</span>
-                                <span class="stat-label">产品种类</span>
+                                <span class="stat-label">产品统计</span>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -206,33 +212,59 @@
                             <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
                             <div class="stat-content">
                                 <span class="stat-value" id="reportPieceworkSalary">¥0</span>
-                                <span class="stat-label">计件工资</span>
+                                <span class="stat-label">计件薪资</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="piecework-records mt-4">
-                        <h4>计件记录</h4>
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>日期</th>
-                                        <th>类型</th>
-                                        <th>数量</th>
-                                        <th>备注</th>
-                                        <th>工资(元)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reportPieceworkRecords">
-                                    <!-- 记录将通过JS动态添加 -->
-                                </tbody>
-                            </table>
+                    <!-- 计件薪资子类型切换按钮 -->
+                    <div class="piecework-type-toggle mb-4 mt-4">
+                        <div class="btn-group w-100" role="group" aria-label="计件薪资视图切换">
+                            <button type="button" class="btn btn-lg btn-primary" id="pieceworkDetailBtn">
+                                <i class="bi bi-list-columns-reverse"></i> 计件明细
+                            </button>
+                            <button type="button" class="btn btn-lg btn-outline-primary" id="productStatsBtn">
+                                <i class="bi bi-box2"></i> 产品统计
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 计件明细区域 -->
+                    <div id="pieceworkDetailSection">
+                        <div class="piecework-records">
+                            <h4>计件明细</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>日期</th>
+                                            <th>类型</th>
+                                            <th>数量</th>
+                                            <th>备注</th>
+                                            <th>工资(元)</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reportPieceworkRecords">
+                                        <!-- 记录将通过JS动态添加 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 产品统计区域 -->
+                    <div id="productStatsSection" style="display: none;">
+                        <div class="piecework-records">
+                            <h4>产品统计</h4>
+                            <div class="product-stats-container">
+                                <!-- 产品统计内容将由JS动态添加 -->
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 计件工资统计区域(之前添加的,现在删除) -->
+                <!-- 计件薪资统计区域(之前添加的,现在删除) -->
                 <div class="piecework-summary mt-4" id="pieceworkSummarySection" style="display: none;">
                 </div>
             </div>
@@ -240,7 +272,7 @@
             <!-- 设置页面 -->
             <div id="settingsPage" class="page">
                 <div class="settings-container">
-                    <h2>工资设置</h2>
+                    <h2>薪资参数设置</h2>
                     <div class="setting-item">
                         <label for="baseSalary">基本月薪 (元):</label>
                         <input type="number" id="baseSalary" class="form-control" value="5000">
@@ -254,16 +286,16 @@
                         <input type="number" id="workDaysPerMonth" class="form-control" value="22">
                     </div>
                     <div class="setting-item">
-                        <label for="overtimeRate">加班费倍率:</label>
+                        <label for="overtimeRate">加班费系数:</label>
                         <input type="number" id="overtimeRate" class="form-control" step="0.1" value="1.5">
                     </div>
                     
                     <hr class="my-4">
-                    <h2>计件工资设置</h2>
+                    <h2>计件薪资参数</h2>
                     <div class="setting-item">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="enablePiecework">
-                            <label class="form-check-label" for="enablePiecework">启用计件工资</label>
+                            <label class="form-check-label" for="enablePiecework">启用计件薪资核算</label>
                         </div>
                     </div>
                     <div id="pieceworkSettings" class="mt-3">
@@ -281,10 +313,10 @@
                 </div>
             </div>
             
-            <!-- 计件工资页面 -->
+            <!-- 计件薪资页面 -->
             <div id="pieceworkPage" class="page">
                 <div class="piecework-container">
-                    <h2>计件工资录入</h2>
+                    <h2>计件录入</h2>
                     
                     <div class="date-selector mb-4">
                         <h5>选择日期:</h5>
@@ -295,7 +327,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="pieceworkType" class="form-label">产品型号:</label>
+                                    <label for="pieceworkType" class="form-label">产品名称/型号:</label>
                                     <input type="text" id="pieceworkType" class="form-control" placeholder="请输入产品型号">
                                 </div>
                             </div>
@@ -325,10 +357,16 @@
                     
                     <div class="piecework-recent-records mt-4">
                         <h4>最近添加的记录</h4>
-                        <div class="recent-record-alert alert alert-success" style="display: none;">
-                            <strong>成功添加记录！</strong> <span id="recentRecordDetails"></span>
+                        <div class="recent-record-alert alert" style="display: none; border-left: 4px solid var(--success-color); background-color: #f8fff9; color: var(--success-color);">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill me-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong>记录已添加！</strong>
+                                    <div id="recentRecordDetails" class="small mt-1"></div>
+                                </div>
+                            </div>
                         </div>
-                        <p class="text-muted">计件工资的详细统计可在"统计报表"中查看</p>
+                        <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i> 计件的详细记录及统计可在"数据统计"中查看</p>
                     </div>
                 </div>
             </div>

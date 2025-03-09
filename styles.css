@@ -1,29 +1,32 @@
 :root {
-    --primary-color: #4a6bdf;
+    --primary-color: #0d6efd;
     --secondary-color: #6c757d;
-    --success-color: #28a745;
+    --success-color: #198754;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
     --light-color: #f8f9fa;
     --dark-color: #343a40;
+    --background-color: #f8f9fa;
+    --border-color: #dee2e6;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: var(--background-color);
+    color: #343a40;
 }
 
 .navbar-brand i {
-    margin-right: 5px;
+    margin-right: 10px;
 }
 
 .content-area {
-    padding: 15px;
-    max-width: 100%;
-    overflow-x: hidden;
+    min-height: calc(100vh - 56px);
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 /* 页面切换 */
@@ -33,7 +36,7 @@ body {
 
 .page.active {
     display: block;
-    animation: fadeIn 0.3s ease-in-out;
+    animation: fadeIn 0.3s;
 }
 
 @keyframes fadeIn {
@@ -44,23 +47,24 @@ body {
 /* 日历样式 */
 .current-date-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    justify-content: space-between;
+    margin-bottom: 20px;
 }
 
 .current-date-header h2 {
     margin: 0;
     font-size: 1.5rem;
+    color: var(--primary-color);
     text-align: center;
+    flex: 1;
 }
 
 .calendar-container {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 20px;
 }
 
 .weekdays {
@@ -73,26 +77,25 @@ body {
 }
 
 .weekdays div {
-    padding: 10px 0;
+    padding: 10px;
 }
 
 .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    background-color: #eaeaea;
+    grid-gap: 1px;
+    background-color: var(--border-color);
 }
 
 .calendar-day {
     background-color: white;
     min-height: 60px;
-    padding: 5px;
     position: relative;
     cursor: pointer;
-    transition: all 0.2s ease;
+    padding: 5px;
+    transition: background-color 0.2s;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
 }
 
 .calendar-day:hover {
@@ -100,18 +103,16 @@ body {
 }
 
 .calendar-day:active {
-    background-color: #e8e8e8;
-    transform: scale(0.98);
+    background-color: #e0e0e0;
 }
 
 .calendar-day .day-number {
-    font-size: 0.9rem;
     font-weight: bold;
 }
 
 .calendar-day.today {
     background-color: #e8f4ff;
-    border: 2px solid var(--primary-color);
+    font-weight: bold;
 }
 
 .calendar-day.checked-in {
@@ -121,100 +122,179 @@ body {
 .calendar-day.checked-in::after {
     content: "✓";
     position: absolute;
-    bottom: 2px;
+    top: 5px;
     right: 5px;
     color: var(--success-color);
-    font-size: 1.2rem;
     font-weight: bold;
+    font-size: 16px;
 }
 
 .calendar-day.makeup {
     position: relative;
 }
 
-/* 修复补打卡图标 */
 .calendar-day.makeup::after {
     content: "✓";
     position: absolute;
-    bottom: 2px;
+    top: 5px;
     right: 5px;
-    color: var(--warning-color);
-    font-size: 1.2rem;
+    color: #ffc107;
     font-weight: bold;
+    font-size: 16px;
 }
 
+/* 移除旧的hover提示，改用新的tooltip */
 .calendar-day:hover::before {
-    content: "点击打卡";
+    display: none;
+}
+
+/* 单独添加日期提示，避免与线条冲突 */
+.calendar-day .date-tooltip {
+    display: none;
     position: absolute;
-    bottom: 3px;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.7rem;
-    color: var(--primary-color);
-    background-color: rgba(255,255,255,0.8);
-    padding: 2px 4px;
-    border-radius: 3px;
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
     white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0.9;
 }
 
+.calendar-day:hover .date-tooltip {
+    display: block;
+}
+
+/* 移除可能冲突的样式 */
 .calendar-day.checked-in:hover::before {
-    content: "查看详情";
+    display: none;
 }
 
 .calendar-day.weekend {
-    background-color: #fff5f5;
+    background-color: #f9f9f9;
 }
 
 .calendar-day.other-month {
-    opacity: 0.3;
+    color: #aaa;
 }
 
+/* 加班指示 */
 .calendar-day.has-overtime {
-    border-top: 3px solid var(--warning-color);
+    border-top: 3px solid var(--success-color);
+    border-bottom: none;
 }
 
+/* 请假指示 */
 .calendar-day.has-leave {
-    border-top: 3px solid var(--danger-color);
+    position: relative;
+}
+
+.calendar-day.has-leave::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--danger-color);
+}
+
+/* 同时有加班和请假的样式 */
+.calendar-day.has-overtime-and-leave {
+    position: relative;
+    border-top: none;
+}
+
+/* 加班指示（左边绿色） */
+.calendar-day.has-overtime-and-leave::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 3px;
+    background-color: var(--success-color);
+    z-index: 1;
+}
+
+/* 请假指示（右边红色） - 使用border-right代替::after，避免与打卡标记冲突 */
+.calendar-day.has-overtime-and-leave {
+    border-right: none; /* 确保之前没有设置过border-right */
+    border-top-right-radius: 0; /* 确保上边右侧是平的，让红色线条能够显示 */
+}
+
+.calendar-day.has-overtime-and-leave::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 3px;
+    background-color: var(--danger-color);
+    z-index: 1;
+}
+
+/* 同时有加班和请假的日子的打卡标记 */
+.calendar-day.has-overtime-and-leave.checked-in::after,
+.calendar-day.has-overtime-and-leave.makeup::after {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: auto;
+    height: auto;
+    background-color: transparent;
+    color: var(--success-color);
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 2; /* 确保显示在其他元素之上 */
 }
 
 .calendar-day .check-status {
-    position: absolute;
-    bottom: 3px;
-    right: 3px;
-    font-size: 0.7rem;
+    margin-top: auto;
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* 打卡面板 */
 .check-in-panel {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .today-date {
     font-size: 1.2rem;
-    font-weight: bold;
     margin-bottom: 15px;
     color: var(--primary-color);
+    font-weight: 500;
 }
 
 .check-buttons {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .check-buttons button {
     flex: 1;
-    margin: 0 5px;
-    padding: 10px;
+    font-size: 1.2rem;
+    padding: 10px 20px;
 }
 
 .overtime-control {
-    margin-top: 15px;
-    border-top: 1px solid #eee;
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
     padding-top: 15px;
 }
 
@@ -226,11 +306,12 @@ body {
 }
 
 #overtimeHours {
+    padding: 10px;
+    font-size: 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     width: 100%;
-    display: block;
-    height: 38px;
-    padding: 0.375rem 0.75rem;
-    font-size: 1rem;
+    margin-bottom: 10px;
 }
 
 .record-buttons {
@@ -240,26 +321,27 @@ body {
 
 .record-buttons .btn {
     flex: 1;
+    font-size: 1rem;
 }
 
 /* 日历提示说明 */
 .calendar-tips {
     display: flex;
-    justify-content: center;
     flex-wrap: wrap;
-    margin-bottom: 20px;
-    font-size: 0.8rem;
+    gap: 15px;
+    margin-top: 20px;
 }
 
 .tip-item {
     display: flex;
     align-items: center;
-    margin: 0 10px;
+    gap: 5px;
 }
 
 .tip-icon {
+    width: 16px;
+    height: 16px;
     display: inline-block;
-    margin-right: 5px;
 }
 
 .checked-in-icon {
@@ -268,52 +350,89 @@ body {
 }
 
 .makeup-icon {
-    color: var(--warning-color);
+    color: #ffc107;
     font-weight: bold;
 }
 
 .overtime-icon {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background-color: var(--warning-color);
+    width: 16px;
+    height: 5px;
+    background-color: var(--success-color);
+    border-radius: 2px;
+    position: relative;
+    top: -3px;
 }
 
 .leave-icon {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
+    width: 16px;
+    height: 5px;
+    background-color: var(--danger-color);
+    border-radius: 2px;
+}
+
+/* 新增：同时有加班和请假的图标 */
+.overtime-leave-icon {
+    width: 16px;
+    height: 5px;
+    position: relative;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.overtime-leave-icon::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background-color: var(--success-color);
+}
+
+.overtime-leave-icon::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
     background-color: var(--danger-color);
 }
 
 /* 统计页面 */
 .stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
 }
 
 .date-selector {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
     align-items: center;
+    gap: 10px;
 }
 
 .stats-selector {
-    min-width: 100px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 .stats-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
 .stat-card {
+    flex: 1;
+    min-width: 200px;
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
     padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
 }
@@ -341,21 +460,23 @@ body {
 
 .attendance-history {
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    padding: 15px;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* 设置页面 */
 .settings-container {
+    max-width: 800px;
+    margin: 0 auto;
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
     padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .setting-item {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 /* 加班和请假的样式 */
@@ -371,8 +492,8 @@ body {
 
 /* 按钮样式美化 */
 .btn-lg {
+    padding: 10px 20px;
     font-size: 1.2rem;
-    padding: 12px;
 }
 
 /* 表格样式优化 */
@@ -381,46 +502,110 @@ body {
 }
 
 .badge {
-    font-size: 0.65rem;
-    padding: 3px 5px;
+    font-weight: normal;
+    padding: 5px 8px;
+    border-radius: 4px;
 }
 
 /* 模态框样式 */
 .day-actions {
-    border-top: 1px solid #eee;
-    padding-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 #modalDeleteAttendance {
-    margin-top: 10px;
+    margin-top: 20px;
 }
 
-/* 响应式调整 */
+/* 数据统计日期选择器行样式 */
+.date-selector-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-selector-row .stats-selector {
+    flex: 1;
+    min-width: 0;
+}
+
+.date-selector-row button {
+    white-space: nowrap;
+}
+
+/* 移动端样式优化 */
 @media (max-width: 768px) {
+    /* 日历打卡页面 */
     .calendar-day {
+        width: 40px;
         height: 40px;
     }
+    
     .check-buttons {
         flex-direction: column;
     }
+    
     .check-buttons button {
         margin-bottom: 10px;
     }
+    
+    /* 统计卡片 */
     .stat-card {
+        padding: 10px;
         width: 100%;
         margin-bottom: 15px;
     }
+    
     .stat-value {
-        font-size: 20px;
+        font-size: 1.2rem;
     }
-    .date-selector {
-        flex-direction: column;
-        align-items: stretch;
-    }
+    
+    /* 数据统计页面选择器样式 */
     .stats-selector {
+        width: 100%;
         margin-bottom: 10px;
     }
     
+    .date-selector h5 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+    
+    /* 数据统计工资类型切换按钮优化 */
+    .salary-type-toggle .btn {
+        padding: 15px;
+        font-size: 1.1rem;
+    }
+    
+    .salary-type-toggle .btn i {
+        margin-right: 5px;
+    }
+    
+    /* 数据统计页面中的工资提示样式 */
+    #estimatedSalary {
+        font-size: 1.5rem;
+    }
+    
+    /* 数据统计薪资参数样式 */
+    #pieceworkSettings {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+    
+    /* 数据统计中的计件薪资部分样式 */
+    .piecework-summary {
+        margin-top: 30px;
+        background-color: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* 计件薪资页面 */
     .piecework-container {
         padding: 15px 10px;
     }
@@ -443,25 +628,27 @@ body {
         margin-bottom: 8px;
     }
     
-    .salary-type-toggle .btn {
-        padding: 8px 0;
-        font-size: 14px;
+    /* 计件薪资子类型切换按钮样式 */
+    .piecework-type-toggle .btn {
+        padding: 10px 5px;
+        font-size: 0.9rem;
     }
     
-    .salary-type-toggle .btn i {
-        margin-right: 5px;
+    .piecework-type-toggle .btn i {
+        margin-right: 3px;
     }
 }
 
-/* 计件工资页面样式 */
+/* 计件薪资页面样式 */
 .piecework-container {
     padding: 20px;
-    max-width: 1000px;
-    margin: 0 auto;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 .piecework-entry {
-    background-color: #f8f9fa;
+    background-color: white;
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
@@ -487,26 +674,26 @@ body {
     border-bottom: 1px solid #e9ecef;
 }
 
-/* 统计报表页面中的工资提示样式 */
+/* 数据统计页面中的工资提示样式 */
 #estimatedSalary {
     cursor: help;
 }
 
-/* 计件工资设置样式 */
+/* 计件薪资参数样式 */
 #pieceworkSettings {
     background-color: #f8f9fa;
-    border-radius: 8px;
     padding: 15px;
-    margin-top: 10px;
+    border-radius: 10px;
+    margin-top: 15px;
 }
 
-/* 统计报表中的计件工资部分样式 */
+/* 数据统计中的计件薪资部分样式 */
 .piecework-summary {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
     margin-top: 30px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .piecework-summary h3 {
@@ -531,4 +718,285 @@ body {
 #totalSalary {
     color: #198754;
     font-weight: bold;
+}
+
+/* 最近添加的记录样式 */
+.piecework-recent-records {
+    margin-top: 30px;
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+    border: 1px solid #f0f0f0;
+}
+
+.piecework-recent-records h4 {
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    font-weight: 600;
+    position: relative;
+    display: inline-block;
+}
+
+.piecework-recent-records h4::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), transparent);
+    border-radius: 3px;
+}
+
+.recent-record-alert {
+    margin: 0 0 15px 0;
+    border-left: 4px solid var(--success-color);
+    background-color: #f8fff9;
+    color: var(--success-color);
+    padding: 12px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+#recentRecordDetails {
+    margin-top: 5px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 在小屏幕上自动换行显示 */
+@media (max-width: 576px) {
+    #recentRecordDetails {
+        word-break: break-word;
+    }
+}
+
+/* 新的样式保留，但删除不再使用的表格样式 */
+
+/* 数据统计工资类型切换按钮优化 */
+.salary-type-toggle .btn {
+    padding: 15px;
+    font-size: 1.1rem;
+}
+
+.salary-type-toggle .btn i {
+    margin-right: 5px;
+}
+
+/* 计件薪资子类型切换按钮样式 */
+.piecework-type-toggle .btn {
+    padding: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.piecework-type-toggle .btn i {
+    margin-right: 5px;
+}
+
+/* 产品统计区域样式 */
+#productStatsSection table {
+    margin-top: 10px;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#productStatsSection th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 12px 15px;
+    color: var(--primary-color);
+}
+
+/* 产品统计项目样式 */
+.product-stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    background-color: white;
+}
+
+.product-stat-item:hover {
+    background-color: #f8f9fa;
+}
+
+.product-type {
+    font-weight: 500;
+    flex: 1;
+}
+
+.product-count {
+    flex: 0 0 100px;
+    text-align: right;
+    margin-right: 15px;
+}
+
+.product-amount {
+    flex: 0 0 100px;
+    text-align: right;
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* 无记录提示样式 */
+.no-records-message {
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+/* 计件明细标题样式 */
+#pieceworkDetailSection .piecework-records h4,
+#productStatsSection .piecework-records h4 {
+    margin-bottom: 15px;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 5px;
+    font-weight: 600;
+}
+
+#pieceworkDetailSection .piecework-records h4:after,
+#productStatsSection .piecework-records h4:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, var(--primary-color), #63a4ff);
+    border-radius: 3px;
+}
+
+/* 产品统计容器样式 */
+.product-stats-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+/* 产品统计标题栏样式 */
+.product-stats-header {
+    display: flex;
+    background-color: #f8f9fa;
+    padding: 15px;
+    font-weight: 600;
+    color: var(--primary-color);
+    border-bottom: 1px solid #eee;
+}
+
+.product-header-type,
+.product-header-count,
+.product-header-amount {
+    padding: 0 5px;
+}
+
+.product-header-type {
+    flex: 2;
+}
+
+.product-header-count {
+    flex: 1;
+    text-align: right;
+}
+
+.product-header-amount {
+    flex: 1;
+    text-align: right;
+}
+
+/* 产品统计项目样式 - 增强 */
+.product-stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.product-stat-item:hover {
+    background-color: #f8f9fa;
+}
+
+.product-type {
+    flex: 2;
+    font-weight: 500;
+    padding: 0 5px;
+}
+
+.product-count {
+    flex: 1;
+    text-align: right;
+    padding: 0 5px;
+}
+
+.product-percent {
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-left: 5px;
+}
+
+.product-amount {
+    flex: 1;
+    text-align: right;
+    font-weight: 500;
+    color: var(--primary-color);
+    padding: 0 5px;
+}
+
+/* 产品统计总计行样式 */
+.product-stat-total {
+    display: flex;
+    padding: 15px;
+    background-color: #f0f8ff;
+    border-top: 2px solid #e9ecef;
+    font-weight: 600;
+}
+
+.product-stat-total .product-type {
+    color: var(--primary-color);
+}
+
+.product-stat-total .product-amount {
+    color: var(--success-color);
+}
+
+/* 适配移动设备 */
+@media (max-width: 576px) {
+    .product-stats-header,
+    .product-stat-item,
+    .product-stat-total {
+        padding: 10px;
+    }
+    
+    .product-header-type,
+    .product-type {
+        flex: 1.5;
+    }
+    
+    .product-percent {
+        display: none;
+    }
+}
+
+/* 为同时有加班和请假的日子添加的显式打卡标记 */
+.explicit-check-mark {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: var(--success-color);
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 10; /* 确保显示在其他元素之上 */
 }
