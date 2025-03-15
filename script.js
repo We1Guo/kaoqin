@@ -215,6 +215,7 @@ function renderCalendar() {
         
         // 如果有考勤记录
         if (attendanceData[dateStr]) {
+            // 首先检查是否有打卡记录，并添加相应的类
             if (attendanceData[dateStr].checkedIn) {
                 // 如果是补打卡
                 if (attendanceData[dateStr].isMakeup) {
@@ -224,14 +225,42 @@ function renderCalendar() {
                 }
             }
             
-            // 区分加班和请假
+            // 检查是否同时有加班和请假记录
+            let hasOvertime = false;
+            let hasLeave = false;
+            
+            // 检查overtime属性和leave属性
             if (attendanceData[dateStr].overtime) {
                 const overtime = parseFloat(attendanceData[dateStr].overtime);
                 if (overtime > 0) {
-                    dayCell.classList.add('has-overtime');
+                    hasOvertime = true;
                 } else if (overtime < 0) {
-                    dayCell.classList.add('has-leave');
+                    hasLeave = true;
                 }
+            }
+            
+            // 检查leave属性 (专门存储请假记录的属性)
+            if (attendanceData[dateStr].leave && parseFloat(attendanceData[dateStr].leave) > 0) {
+                hasLeave = true;
+            }
+            
+            // 添加相应的类和指示器
+            if (hasOvertime && hasLeave) {
+                dayCell.classList.add('has-both');
+                
+                // 创建并添加加班指示器元素
+                const overtimeIndicator = document.createElement('div');
+                overtimeIndicator.className = 'overtime-indicator';
+                dayCell.appendChild(overtimeIndicator);
+                
+                // 创建并添加请假指示器元素
+                const leaveIndicator = document.createElement('div');
+                leaveIndicator.className = 'leave-indicator';
+                dayCell.appendChild(leaveIndicator);
+            } else if (hasOvertime) {
+                dayCell.classList.add('has-overtime');
+            } else if (hasLeave) {
+                dayCell.classList.add('has-leave');
             }
         }
         
@@ -297,37 +326,85 @@ function doCheckIn(date) {
 
 // 记录加班或请假
 function saveOvertime(isOvertime) {
-    const hours = parseFloat(document.getElementById('overtimeHours').value);
+    const hoursInput = document.getElementById('overtimeHours');
+    let hours = parseFloat(hoursInput.value);
     
     if (isNaN(hours) || hours <= 0) {
-        alert('请输入有效的小时数！');
+        alert('请输入大于0的有效时长！');
         return;
+    }
+    
+    // 如果是请假，将时间变为负值
+    if (isOvertime === false) {
+        hours = -hours;
     }
     
     const today = new Date();
     const dateStr = formatDateString(today);
     
     if (!attendanceData[dateStr]) {
-        alert('请先完成打卡再记录加班/请假！');
-        return;
+        attendanceData[dateStr] = {};
     }
     
-    if (isOvertime) {
-        attendanceData[dateStr].overtime = hours;
-        alert(`已记录 ${hours} 小时加班！`);
-    } else {
-        attendanceData[dateStr].leave = hours;
-        alert(`已记录 ${hours} 小时请假！`);
+    // 检查是否已有加班/请假记录
+    let existingOvertime = 0;
+    if (attendanceData[dateStr].overtime) {
+        existingOvertime = parseFloat(attendanceData[dateStr].overtime);
+    }
+
+    // 如果已有加班/请假记录，需要处理冲突情况
+    if (existingOvertime !== 0) {
+        // 如果已有加班记录，且当前操作也是记录加班
+        if (existingOvertime > 0 && isOvertime) {
+            // 累加加班时间
+            hours += existingOvertime;
+        } 
+        // 如果已有请假记录，且当前操作也是记录请假
+        else if (existingOvertime < 0 && !isOvertime) {
+            // 累加请假时间（负值）
+            hours += existingOvertime;
+        }
+        // 如果已有加班记录，但当前操作是记录请假，或已有请假记录，但当前操作是记录加班
+        // 我们需要分别存储加班和请假记录
+        else {
+            // 判断现有记录是加班还是请假
+            if (existingOvertime > 0) {
+                // 现有加班记录，新增请假记录
+                attendanceData[dateStr].overtime = existingOvertime;
+                attendanceData[dateStr].leave = Math.abs(hours); // 修复：请假时间必须用正值
+            } else {
+                // 现有请假记录，新增加班记录
+                attendanceData[dateStr].overtime = hours;
+                attendanceData[dateStr].leave = Math.abs(existingOvertime); // 请假时记录为正值
+            }
+            
+            localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+            renderCalendar();
+            updateStats();
+            
+            const message = isOvertime ? 
+                `加班时间记录成功: ${hours}小时` : 
+                `请假时间记录成功: ${Math.abs(hours)}小时`;
+                
+            alert(message);
+            hoursInput.value = '';
+            return;
+        }
     }
     
-    // 保存到本地存储
+    // 正常情况：记录加班或请假
+    attendanceData[dateStr].overtime = hours;
+    
     localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
-    
-    // 清空输入框
-    document.getElementById('overtimeHours').value = '';
-    
-    // 更新日历视图
     renderCalendar();
+    updateStats();
+    
+    const message = hours >= 0 ? 
+        `加班时间记录成功: ${hours}小时` : 
+        `请假时间记录成功: ${Math.abs(hours)}小时`;
+        
+    alert(message);
+    hoursInput.value = '';
 }
 
 // 记录过去日期的加班或请假
@@ -344,6 +421,11 @@ function recordPastOvertime(date, isOvertime, hours = null) {
     if (isNaN(hours)) {
         alert('请输入有效的小时数！');
         return;
+    }
+    
+    // 如果是请假，将时间变为负值
+    if (!isOvertime) {
+        hours = -hours;
     }
     
     // 如果小时数为0，则清除记录
@@ -366,12 +448,39 @@ function recordPastOvertime(date, isOvertime, hours = null) {
         return;
     }
     
+    // 检查是否已有加班/请假记录
+    let existingOvertime = 0;
+    let existingLeave = 0;
+    
+    if (attendanceData[dateStr].overtime) {
+        existingOvertime = parseFloat(attendanceData[dateStr].overtime);
+        if (existingOvertime < 0) {
+            // 如果overtime为负值，表示请假
+            existingLeave = Math.abs(existingOvertime);
+            existingOvertime = 0;
+        }
+    }
+    
+    if (attendanceData[dateStr].leave) {
+        existingLeave = parseFloat(attendanceData[dateStr].leave);
+    }
+    
+    // 根据记录类型更新数据
     if (isOvertime) {
         attendanceData[dateStr].overtime = hours;
-        alert(`已记录 ${hours} 小时加班！`);
+        // 保留可能存在的请假记录
+        if (existingLeave > 0) {
+            attendanceData[dateStr].leave = existingLeave;
+        }
     } else {
-        attendanceData[dateStr].leave = hours;
-        alert(`已记录 ${hours} 小时请假！`);
+        // 如果是请假
+        if (existingOvertime > 0) {
+            // 如果已有加班记录，单独存储请假记录
+            attendanceData[dateStr].leave = Math.abs(hours);
+        } else {
+            // 否则用overtime字段的负值表示请假
+            attendanceData[dateStr].overtime = hours;
+        }
     }
     
     // 保存到本地存储
@@ -379,6 +488,12 @@ function recordPastOvertime(date, isOvertime, hours = null) {
     
     // 更新日历视图
     renderCalendar();
+    
+    const message = isOvertime ? 
+        `已记录 ${hours} 小时加班！` : 
+        `已记录 ${Math.abs(hours)} 小时请假！`;
+        
+    alert(message);
 }
 
 // 删除考勤记录
@@ -386,7 +501,33 @@ function deleteAttendance(dateStr) {
     if (confirm('确定要删除这条打卡记录吗？')) {
         delete attendanceData[dateStr];
         localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+        
+        // 更新UI
         renderCalendar();
+        
+        // 如果在统计页面，更新统计数据
+        if (document.getElementById('statsPage').classList.contains('active')) {
+            // 获取当前选择的统计时间段
+            const yearSelect = document.getElementById('statsYear');
+            const monthSelect = document.getElementById('statsMonth');
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedMonth = monthSelect.value;
+            
+            // 更新考勤薪资统计
+            if (selectedMonth === 'all') {
+                // 全年统计
+                const startDate = new Date(selectedYear, 0, 1);
+                const endDate = new Date(selectedYear, 11, 31);
+                updateStatsForPeriod(startDate, endDate, `${selectedYear}年全年`, 'attendance');
+            } else {
+                // 月度统计
+                const monthIndex = parseInt(selectedMonth);
+                const startDate = new Date(selectedYear, monthIndex, 1);
+                const endDate = new Date(selectedYear, monthIndex + 1, 0); // 当月最后一天
+                updateStatsForPeriod(startDate, endDate, `${selectedYear}年${monthIndex + 1}月`, 'attendance');
+            }
+        }
+        
         alert('打卡记录已删除！');
     }
 }
@@ -426,13 +567,37 @@ function showDayDetails(date) {
             detailsHTML += `</p>`;
             detailsHTML += `<p><strong>打卡时间:</strong> ${attendanceData[dateStr].time}</p>`;
             
-            // 显示加班或请假情况
+            // 检查加班记录
+            let hasOvertime = false;
+            let overtimeHours = 0;
+            
             if (attendanceData[dateStr].overtime && parseFloat(attendanceData[dateStr].overtime) > 0) {
-                detailsHTML += `<p><strong>加班时长:</strong> <span class="text-success">${attendanceData[dateStr].overtime} 小时</span></p>`;
+                hasOvertime = true;
+                overtimeHours = parseFloat(attendanceData[dateStr].overtime);
+            }
+            
+            // 检查请假记录 - 可能在overtime为负值或leave属性中
+            let hasLeave = false;
+            let leaveHours = 0;
+            
+            if (attendanceData[dateStr].overtime && parseFloat(attendanceData[dateStr].overtime) < 0) {
+                hasLeave = true;
+                leaveHours = Math.abs(parseFloat(attendanceData[dateStr].overtime));
             }
             
             if (attendanceData[dateStr].leave && parseFloat(attendanceData[dateStr].leave) > 0) {
-                detailsHTML += `<p><strong>请假时长:</strong> <span class="text-danger">${attendanceData[dateStr].leave} 小时</span></p>`;
+                hasLeave = true;
+                leaveHours = parseFloat(attendanceData[dateStr].leave);
+            }
+            
+            // 显示加班情况
+            if (hasOvertime) {
+                detailsHTML += `<p><strong>加班时长:</strong> <span class="text-success">${overtimeHours} 小时</span></p>`;
+            }
+            
+            // 显示请假情况
+            if (hasLeave) {
+                detailsHTML += `<p><strong>请假时长:</strong> <span class="text-danger">${leaveHours} 小时</span></p>`;
             }
         } else {
             detailsHTML += `<p><strong>打卡状态:</strong> <span class="text-danger">未打卡</span></p>`;
@@ -446,6 +611,20 @@ function showDayDetails(date) {
             modalElement._bootstrap_modal = new bootstrap.Modal(modalElement);
         }
         modalElement._bootstrap_modal.show();
+        
+        // 设置模态框中的加班和请假输入框
+        if (document.getElementById('modalOvertimeHours')) {
+            document.getElementById('modalOvertimeHours').value = '';
+        }
+        if (document.getElementById('modalLeaveHours')) {
+            document.getElementById('modalLeaveHours').value = '';
+        }
+        
+        // 为删除按钮添加文字
+        const deleteBtn = document.getElementById('modalDeleteAttendance');
+        if (deleteBtn && deleteBtn.innerHTML.indexOf('删除') === -1) {
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i> 删除记录';
+        }
         
         // 重新绑定模态框按钮事件
         document.getElementById('modalCheckIn').onclick = function() {
@@ -475,9 +654,10 @@ function showDayDetails(date) {
         document.getElementById('modalDeleteAttendance').onclick = function() {
             if (currentDetailDate) {
                 const dateStr = formatDateString(currentDetailDate);
-                deleteAttendance(dateStr);
-                renderCalendar();
+                // 先关闭模态框
                 modalElement._bootstrap_modal.hide();
+                // 然后执行删除操作，删除函数内部会负责更新视图和数据
+                deleteAttendance(dateStr);
             }
         };
     } catch (error) {
@@ -620,12 +800,22 @@ function updateStatsForPeriod(startDate, endDate, periodLabel, salaryType) {
             if (attendance && attendance.checkedIn) {
                 workDays++;
                 
+                // 检查overtime属性中的加班或请假记录
                 if (attendance.overtime) {
-                    overtimeHours += parseFloat(attendance.overtime);
+                    const overtime = parseFloat(attendance.overtime);
+                    if (overtime > 0) {
+                        overtimeHours += overtime;
+                    } else if (overtime < 0) {
+                        leaveHours += Math.abs(overtime);
+                    }
                 }
                 
+                // 检查专门的leave属性中的请假记录
                 if (attendance.leave) {
-                    leaveHours += parseFloat(attendance.leave);
+                    const leave = parseFloat(attendance.leave);
+                    if (leave > 0) {
+                        leaveHours += leave;
+                    }
                 }
                 
                 attendanceRecords.push({
@@ -662,6 +852,11 @@ function updateStatsForPeriod(startDate, endDate, periodLabel, salaryType) {
 // 渲染考勤记录
 function renderAttendanceRecords(records) {
     const tbody = document.getElementById('attendanceRecords');
+    if (!tbody) {
+        console.error('找不到考勤记录表格DOM元素');
+        return;
+    }
+    
     tbody.innerHTML = '';
     
     // 按日期排序，从新到旧
@@ -689,9 +884,24 @@ function renderAttendanceRecords(records) {
         const overtimeTd = document.createElement('td');
         let overtimeText = "";
         
-        // 显示加班时长（绿色）
-        if (record.overtime) {
-            overtimeText += `<span class="text-success">${record.overtime}小时</span>`;
+        // 计算加班时长
+        let overtimeHours = 0;
+        if (record.overtime && parseFloat(record.overtime) > 0) {
+            overtimeHours = parseFloat(record.overtime);
+        }
+        
+        // 计算请假时长 (可能来自overtime负值或leave属性)
+        let leaveHours = 0;
+        if (record.overtime && parseFloat(record.overtime) < 0) {
+            leaveHours = Math.abs(parseFloat(record.overtime));
+        }
+        if (record.leave && parseFloat(record.leave) > 0) {
+            leaveHours += parseFloat(record.leave);
+        }
+        
+        // 显示加班时长
+        if (overtimeHours > 0) {
+            overtimeText += `<span class="text-success">${overtimeHours}小时</span>`;
         } else {
             overtimeText += `<span class="text-muted">0小时</span>`;
         }
@@ -699,9 +909,9 @@ function renderAttendanceRecords(records) {
         // 添加分隔符
         overtimeText += '/';
         
-        // 显示请假时长（红色）
-        if (record.leave) {
-            overtimeText += `<span class="text-danger">${record.leave}小时</span>`;
+        // 显示请假时长
+        if (leaveHours > 0) {
+            overtimeText += `<span class="text-danger">${leaveHours}小时</span>`;
         } else {
             overtimeText += `<span class="text-muted">0小时</span>`;
         }
@@ -730,10 +940,10 @@ function calculateSalary(workDays, overtimeHours, leaveHours) {
     // 基本工资（根据实际出勤天数）
     const basePay = dailySalary * workDays;
     
-    // 加班费
+    // 加班费（使用加班系数）
     const overtimePay = hourlyWage * settings.overtimeRate * overtimeHours;
     
-    // 请假扣款
+    // 请假扣款（使用基本工资，不用加班系数）
     const leavePay = hourlyWage * leaveHours;
     
     // 总工资 = 基本工资 + 加班费 - 请假扣款
@@ -887,8 +1097,8 @@ function savePieceworkRecord() {
         price.toString().split('.')[1].length : 2;
     const priceFormatted = price.toFixed(Math.min(Math.max(priceDecimalPlaces, 2), 3));
     
-    // 使用横向格式显示记录信息
-    detailsElement.innerHTML = `${formatShortDate(dateStr)} | 产品型号: <strong>${type}</strong> | 数量: <strong>${count}件</strong> | 单价: <strong>${priceFormatted}元/件</strong> | 金额: <strong>${(count * price).toFixed(2)}元</strong>`;
+    // 使用横向格式显示记录信息 - 修复函数调用
+    detailsElement.innerHTML = `${dateStr} | 产品型号: <strong>${type}</strong> | 数量: <strong>${count}件</strong> | 单价: <strong>${priceFormatted}元/件</strong> | 金额: <strong>${(count * price).toFixed(2)}元</strong>`;
     
     alertElement.style.display = 'block';
     
@@ -914,7 +1124,7 @@ function showTodayPieceworkRecords() {
     alertElement.style.display = 'none';
 }
 
-// 保留函数以避免错误，但简化实现
+// 修复删除计件记录后的显示问题
 function deleteTodayPieceworkRecord(dateStr, recordId) {
     if (pieceworkData[dateStr]) {
         const index = pieceworkData[dateStr].findIndex(record => record.id === recordId);
@@ -928,6 +1138,27 @@ function deleteTodayPieceworkRecord(dateStr, recordId) {
                 }
                 
                 localStorage.setItem('pieceworkData', JSON.stringify(pieceworkData));
+                
+                // 获取当前选择的统计时间段，无论是否在统计页面都确保视图更新
+                const yearSelect = document.getElementById('statsYear');
+                const monthSelect = document.getElementById('statsMonth');
+                const selectedYear = parseInt(yearSelect.value);
+                const selectedMonth = monthSelect.value;
+                
+                // 重新计算并显示计件薪资统计
+                if (selectedMonth === 'all') {
+                    // 统计全年
+                    const startDate = new Date(selectedYear, 0, 1);
+                    const endDate = new Date(selectedYear, 11, 31);
+                    updatePieceworkStatsForPeriod(startDate, endDate);
+                } else {
+                    // 统计选定月份 - 注意月份索引从0开始
+                    const monthIndex = parseInt(selectedMonth);
+                    const startDate = new Date(selectedYear, monthIndex, 1);
+                    const endDate = new Date(selectedYear, monthIndex + 1, 0); // 当月最后一天
+                    updatePieceworkStatsForPeriod(startDate, endDate);
+                }
+                
                 alert('记录已删除');
             }
         }
@@ -955,438 +1186,236 @@ function updatePieceworkStatsForPeriod(startDate, endDate) {
                     endDate = new Date(year, month + 1, 0); // 当月最后一天
                     console.log(`转换为月度统计: ${startDate.toISOString()} 到 ${endDate.toISOString()}`);
                 }
-            } else {
-                // 默认为当年统计
-                startDate = new Date(year, 0, 1);
-                endDate = new Date(year, 11, 31);
-                console.log(`转换为默认年度统计: ${startDate.toISOString()} 到 ${endDate.toISOString()}`);
             }
         }
         
-        // 保存当前日期范围，供其他函数使用
-        window.currentPieceworkDateRange = {
-            startDate: startDate,
-            endDate: endDate
-        };
-        
-        let totalPieces = 0;
-        let totalSalary = 0;
+        // 计算这个时间段内的记录
+        let totalRecords = [];
+        let totalCount = 0;
+        let totalAmount = 0;
         let productTypes = new Set();
-        const pieceworkRecords = [];
         
-        // 统计数据 - 使用更高效的方式遍历日期
-        const allDates = Object.keys(pieceworkData);
-        for (const dateStr of allDates) {
-            // 正确解析日期字符串（格式如：2023-03-15）
-            const parts = dateStr.split('-');
-            const recordDate = new Date(
-                parseInt(parts[0]),    // 年
-                parseInt(parts[1]) - 1, // 月（注意减1，因为月份从0开始）
-                parseInt(parts[2])      // 日
-            );
-            
-            // 检查日期是否在所选范围内
-            if (recordDate >= startDate && recordDate <= endDate) {
+        // 收集时间范围内的所有记录
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = formatDateString(d);
+            if (pieceworkData[dateStr]) {
                 pieceworkData[dateStr].forEach(record => {
-                    totalPieces += record.count;
-                    const recordSalary = record.count * record.price;
-                    totalSalary += recordSalary;
+                    totalRecords.push({...record, date: dateStr});
+                    totalCount += record.count;
+                    totalAmount += record.count * record.price;
                     productTypes.add(record.type);
-                    pieceworkRecords.push({
-                        date: dateStr,
-                        record: record
-                    });
                 });
             }
         }
         
-        // 计算奖金（如果达到最低数量要求）
-        if (settings.pieceworkMinimum > 0 && totalPieces >= settings.pieceworkMinimum) {
-            totalSalary += settings.pieceworkBonus;
-        }
-        
-        // 更新计件薪资统计卡片
+        // 更新统计显示
         document.getElementById('reportPieceworkTypes').textContent = productTypes.size;
-        document.getElementById('reportPieceworkTotal').textContent = totalPieces;
+        document.getElementById('reportPieceworkTotal').textContent = totalCount;
+        
+        // 计算并显示总薪资
+        const totalSalary = calculatePieceworkSalary(totalRecords);
         document.getElementById('reportPieceworkSalary').textContent = `¥${totalSalary.toFixed(2)}`;
         
-        // 渲染计件薪资记录表格
-        renderReportPieceworkRecords(pieceworkRecords);
+        // 渲染计件记录表格
+        renderPieceworkRecords(totalRecords);
         
-        // 如果当前显示的是产品统计视图，也更新产品统计
-        if (document.getElementById('productStatsSection').style.display !== 'none') {
-            renderProductStats();
-        }
+        // 同时也更新产品统计视图
+        updateProductStats(totalRecords);
         
-        console.log(`计件薪资统计完成: ${totalPieces}件, ¥${totalSalary.toFixed(2)}`);
     } catch (error) {
-        console.error('更新计件薪资统计出错:', error);
+        console.error('更新计件薪资统计错误:', error);
     }
 }
 
-// 渲染计件薪资记录表格
-function renderReportPieceworkRecords(records) {
-    const tbody = document.getElementById('reportPieceworkRecords');
-    tbody.innerHTML = '';
+// 添加在统计页面切换考勤薪资和计件薪资的函数
+function toggleSalaryTypeDisplay(type) {
+    const attendanceBtn = document.getElementById('attendanceTypeBtn');
+    const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
+    const attendanceStatsSection = document.getElementById('attendanceStatsSection');
+    const pieceworkStatsSection = document.getElementById('pieceworkStatsSection');
     
-    // 按日期倒序排序
-    records.sort((a, b) => {
-        if (a.date === b.date) {
-            return new Date(b.record.timestamp) - new Date(a.record.timestamp);
-        }
-        return new Date(b.date) - new Date(a.date);
-    });
-    
-    if (records.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="6" class="text-center">暂无计件记录</td>';
-        tbody.appendChild(row);
-        return;
-    }
-    
-    records.forEach(item => {
-        const { date, record } = item;
-        const row = document.createElement('tr');
+    if (type === 'attendance') {
+        // 切换到考勤薪资
+        attendanceBtn.classList.add('btn-primary');
+        attendanceBtn.classList.remove('btn-outline-primary');
+        pieceworkBtn.classList.add('btn-outline-primary');
+        pieceworkBtn.classList.remove('btn-primary');
         
-        // 计算该记录的薪资
-        const salary = record.count * record.price;
+        attendanceStatsSection.style.display = 'block';
+        pieceworkStatsSection.style.display = 'none';
+    } else if (type === 'piecework') {
+        // 切换到计件薪资
+        pieceworkBtn.classList.add('btn-primary');
+        pieceworkBtn.classList.remove('btn-outline-primary');
+        attendanceBtn.classList.add('btn-outline-primary');
+        attendanceBtn.classList.remove('btn-primary');
         
-        // 确定单价显示的小数位数
-        const priceDecimalPlaces = record.price.toString().includes('.') ? 
-            record.price.toString().split('.')[1].length : 2;
-        const priceFormatted = record.price.toFixed(Math.min(Math.max(priceDecimalPlaces, 2), 3));
+        pieceworkStatsSection.style.display = 'block';
+        attendanceStatsSection.style.display = 'none';
         
-        row.innerHTML = `
-            <td>${formatShortDate(date)}</td>
-            <td>${record.type}</td>
-            <td>${record.count}</td>
-            <td>${record.note || '-'}</td>
-            <td>¥${salary.toFixed(2)} <span class="text-muted small">(${priceFormatted}元/件)</span></td>
-            <td>
-                <button class="btn btn-sm btn-danger delete-piecework" data-date="${date}" data-id="${record.id}">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+        // 生成当前选择的统计
+        const year = document.getElementById('statsYear').value;
+        const month = document.getElementById('statsMonth').value;
         
-        tbody.appendChild(row);
-    });
-    
-    // 绑定删除按钮事件
-    document.querySelectorAll('.delete-piecework').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const date = this.getAttribute('data-date');
-            const id = parseInt(this.getAttribute('data-id'));
-            deletePieceworkRecord(date, id);
-        });
-    });
-}
-
-// 删除计件薪资记录
-function deletePieceworkRecord(dateStr, recordId) {
-    if (confirm('确定要删除这条记录吗？')) {
-        if (pieceworkData[dateStr]) {
-            // 过滤出除了要删除的记录之外的所有记录
-            pieceworkData[dateStr] = pieceworkData[dateStr].filter(record => record.id !== recordId);
-            
-            // 如果该日期下没有记录了，删除该日期的键
-            if (pieceworkData[dateStr].length === 0) {
-                delete pieceworkData[dateStr];
-            }
-            
-            // 保存到本地存储
-            localStorage.setItem('pieceworkData', JSON.stringify(pieceworkData));
-            
-            alert('记录已删除！');
-            
-            // 如果在统计报表页面，更新当前统计
-            if (document.getElementById('statsPage').classList.contains('active')) {
-                updatePieceworkStatsForPeriod(
-                    document.getElementById('statsYear').value,
-                    document.getElementById('statsMonth').value
-                );
-            }
+        // 更新计件薪资统计
+        if (month === 'all') {
+            updatePieceworkStatsForPeriod(year, 'all');
+        } else {
+            updatePieceworkStatsForPeriod(year, month);
         }
     }
 }
 
-// 切换工资类型显示
-function toggleSalaryTypeDisplay(salaryType) {
-    try {
-        // 防止重复调用
-        const attendanceBtn = document.getElementById('attendanceTypeBtn');
-        const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
-        
-        console.log(`尝试切换到: ${salaryType}`);
-        
-        // 如果当前已经是这个类型，就不重复切换
-        if ((salaryType === 'attendance' && attendanceBtn.classList.contains('btn-primary')) ||
-            (salaryType === 'piecework' && pieceworkBtn.classList.contains('btn-primary'))) {
-            console.log(`已经是 ${salaryType} 类型，不重复切换`);
-            return;
-        }
-        
-        console.time('切换工资类型');
-        // 获取各个元素
-        const attendanceSection = document.getElementById('attendanceStatsSection');
-        const pieceworkSection = document.getElementById('pieceworkStatsSection');
-        
-        console.log(`切换到: ${salaryType}, 当前按钮状态: 打卡=${attendanceBtn.classList.contains('btn-primary')}, 计件=${pieceworkBtn.classList.contains('btn-primary')}`);
-        
-        // 获取当前年月
-        const statsYearSelect = document.getElementById('statsYear');
-        const statsMonthSelect = document.getElementById('statsMonth');
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth();
-        
-        // 如果当前没有选择任何值，则设置为当前年月
-        if (!statsYearSelect.value) {
-            statsYearSelect.value = currentYear.toString();
-        }
-        
-        if (!statsMonthSelect.value || statsMonthSelect.value === 'all') {
-            statsMonthSelect.value = currentMonth.toString();
-        }
-        
-        // 先更新按钮状态，让界面感觉更快速响应
-        if (salaryType === 'attendance') {
-            console.log('切换为考勤薪资显示');
-            // 更新按钮样式
-            attendanceBtn.classList.add('btn-primary');
-            attendanceBtn.classList.remove('btn-outline-primary');
-            pieceworkBtn.classList.add('btn-outline-primary');
-            pieceworkBtn.classList.remove('btn-primary');
-        } 
-        else if (salaryType === 'piecework') {
-            console.log('切换为计件薪资显示');
-            // 更新按钮样式
-            pieceworkBtn.classList.add('btn-primary');
-            pieceworkBtn.classList.remove('btn-outline-primary');
-            attendanceBtn.classList.add('btn-outline-primary');
-            attendanceBtn.classList.remove('btn-primary');
-        }
-        
-        // 立即更新显示状态，不延迟
-        if (salaryType === 'attendance') {
-            // 显示考勤薪资区域，隐藏计件薪资区域
-            attendanceSection.style.display = 'block';
-            pieceworkSection.style.display = 'none';
-            
-            // 自动更新考勤薪资统计，注意不要传递salaryType参数，避免循环
-            if (typeof updateMonthlyStats === 'function') {
-                console.log('更新考勤薪资统计');
-                updateMonthlyStats(statsYearSelect.value, statsMonthSelect.value);
-            }
-        } 
-        else if (salaryType === 'piecework') {
-            // 显示计件薪资区域，隐藏考勤薪资区域
-            attendanceSection.style.display = 'none';
-            pieceworkSection.style.display = 'block';
-            
-            // 自动更新计件薪资统计
-            if (typeof updatePieceworkStatsForPeriod === 'function') {
-                console.log('更新计件薪资统计');
-                const year = statsYearSelect.value;
-                const monthValue = statsMonthSelect.value;
-                
-                // 清除之前存储的日期范围，确保重新计算
-                window.currentPieceworkDateRange = null;
-                
-                if (monthValue === 'all') {
-                    // 年度统计
-                    updatePieceworkStatsForPeriod(year, 'all');
-                } else {
-                    // 月度统计
-                    const month = parseInt(monthValue);
-                    updatePieceworkStatsForPeriod(year, month);
-                }
-            }
-            
-            // 重置计件薪资子视图为明细视图
-            togglePieceworkView('detail');
-        }
-        
-        console.log(`切换后: 打卡=${attendanceBtn.classList.contains('btn-primary')}, 计件=${pieceworkBtn.classList.contains('btn-primary')}`);
-        console.timeEnd('切换工资类型');
-    } catch (error) {
-        console.error('工资类型切换出错:', error);
-    }
-}
-
-// 切换计件薪资视图（明细/产品统计）
-function togglePieceworkView(viewType) {
+// 切换计件薪资显示的明细和产品统计视图
+function togglePieceworkView(type) {
     const detailBtn = document.getElementById('pieceworkDetailBtn');
     const productBtn = document.getElementById('productStatsBtn');
     const detailSection = document.getElementById('pieceworkDetailSection');
     const productSection = document.getElementById('productStatsSection');
     
-    if (viewType === 'detail') {
-        // 更新按钮样式
+    if (type === 'detail') {
+        // 切换到明细视图
         detailBtn.classList.add('btn-primary');
         detailBtn.classList.remove('btn-outline-primary');
         productBtn.classList.add('btn-outline-primary');
         productBtn.classList.remove('btn-primary');
         
-        // 更新显示区域
         detailSection.style.display = 'block';
         productSection.style.display = 'none';
-    } else if (viewType === 'product') {
-        // 更新按钮样式
+    } else if (type === 'product') {
+        // 切换到产品统计视图
         productBtn.classList.add('btn-primary');
         productBtn.classList.remove('btn-outline-primary');
         detailBtn.classList.add('btn-outline-primary');
         detailBtn.classList.remove('btn-primary');
         
-        // 更新显示区域
-        detailSection.style.display = 'none';
         productSection.style.display = 'block';
-        
-        // 更新产品统计数据
-        renderProductStats();
+        detailSection.style.display = 'none';
     }
 }
 
-// 渲染产品统计数据
-function renderProductStats() {
-    const container = document.querySelector('#productStatsSection .product-stats-container');
+// 渲染计件薪资记录表格
+function renderPieceworkRecords(records) {
+    const tbody = document.getElementById('reportPieceworkRecords');
+    if (!tbody) {
+        console.error('找不到计件记录表格DOM元素');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    // 按日期排序，从新到旧
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    records.forEach(record => {
+        const row = document.createElement('tr');
+        
+        // 日期列
+        const dateTd = document.createElement('td');
+        dateTd.textContent = record.date;
+        row.appendChild(dateTd);
+        
+        // 类型列
+        const typeTd = document.createElement('td');
+        typeTd.textContent = record.type;
+        row.appendChild(typeTd);
+        
+        // 数量列
+        const countTd = document.createElement('td');
+        countTd.textContent = record.count;
+        row.appendChild(countTd);
+        
+        // 单价列
+        const priceTd = document.createElement('td');
+        priceTd.textContent = `¥${record.price.toFixed(2)}`;
+        row.appendChild(priceTd);
+        
+        // 备注列
+        const noteTd = document.createElement('td');
+        noteTd.textContent = record.note || '-';
+        row.appendChild(noteTd);
+        
+        // 工资列
+        const salaryTd = document.createElement('td');
+        salaryTd.textContent = `¥${(record.count * record.price).toFixed(2)}`;
+        row.appendChild(salaryTd);
+        
+        // 操作列
+        const actionTd = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-danger';
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.addEventListener('click', () => deleteTodayPieceworkRecord(record.date, record.id));
+        actionTd.appendChild(deleteBtn);
+        row.appendChild(actionTd);
+        
+        tbody.appendChild(row);
+    });
+}
+
+// 更新产品统计视图
+function updateProductStats(records) {
+    const container = document.querySelector('.product-stats-container');
+    if (!container) {
+        console.error('找不到产品统计容器DOM元素');
+        return;
+    }
+    
     container.innerHTML = '';
     
-    try {
-        // 使用当前已存储的日期范围，避免重复计算
-        let startDate, endDate;
-        
-        if (window.currentPieceworkDateRange) {
-            startDate = window.currentPieceworkDateRange.startDate;
-            endDate = window.currentPieceworkDateRange.endDate;
-            console.log(`使用已存储的日期范围: ${startDate.toISOString()} 到 ${endDate.toISOString()}`);
-        } else {
-            // 查找当前选择的时间范围内的记录
-            const year = document.getElementById('statsYear').value;
-            const monthSelect = document.getElementById('statsMonth');
-            const month = monthSelect.value;
-            
-            if (month === 'all') {
-                // 全年
-                startDate = new Date(year, 0, 1);
-                endDate = new Date(year, 11, 31);
-            } else {
-                // 指定月份
-                startDate = new Date(year, month, 1);
-                // 获取月末日期
-                endDate = new Date(year, parseInt(month) + 1, 0);
-            }
-            console.log(`使用新计算的日期范围: ${startDate.toISOString()} 到 ${endDate.toISOString()}`);
-        }
-        
-        // 创建标题栏
-        const headerRow = document.createElement('div');
-        headerRow.className = 'product-stats-header';
-        headerRow.innerHTML = `
-            <div class="product-header-type">产品型号</div>
-            <div class="product-header-count">总数量</div>
-            <div class="product-header-amount">工资金额</div>
-        `;
-        container.appendChild(headerRow);
-        
-        // 获取这段时间内的所有记录
-        const productStats = {};
-        let totalCount = 0;
-        let totalAmount = 0;
-        
-        // 遍历所有日期的记录
-        Object.keys(pieceworkData).forEach(dateStr => {
-            // 正确解析日期字符串
-            const parts = dateStr.split('-');
-            const recordDate = new Date(
-                parseInt(parts[0]), 
-                parseInt(parts[1]) - 1, 
-                parseInt(parts[2])
-            );
-            
-            // 检查日期是否在所选范围内
-            if (recordDate >= startDate && recordDate <= endDate) {
-                // 遍历当天的所有记录
-                pieceworkData[dateStr].forEach(record => {
-                    const type = record.type;
-                    const count = record.count;
-                    const price = record.price;
-                    const salary = count * price;
-                    
-                    // 更新产品统计
-                    if (!productStats[type]) {
-                        productStats[type] = {
-                            total: 0,
-                            salary: 0
-                        };
-                    }
-                    
-                    productStats[type].total += count;
-                    productStats[type].salary += salary;
-                    
-                    // 更新总计
-                    totalCount += count;
-                    totalAmount += salary;
-                });
-            }
-        });
-        
-        // 将统计结果转换为数组，以便排序
-        const statsArray = Object.keys(productStats).map(type => {
-            return {
-                type: type,
-                total: productStats[type].total,
-                salary: productStats[type].salary
+    // 按产品类型分组统计
+    const productStats = {};
+    
+    records.forEach(record => {
+        if (!productStats[record.type]) {
+            productStats[record.type] = {
+                type: record.type,
+                totalCount: 0,
+                totalAmount: 0
             };
-        });
-        
-        // 按照总数量从高到低排序
-        statsArray.sort((a, b) => b.total - a.total);
-        
-        // 渲染到界面
-        if (statsArray.length === 0) {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'no-records-message';
-            emptyMessage.textContent = '暂无产品记录';
-            container.appendChild(emptyMessage);
-            return;
         }
         
-        // 添加所有产品项
-        statsArray.forEach(item => {
-            const productItem = document.createElement('div');
-            productItem.className = 'product-stat-item';
-            
-            // 计算百分比
-            const percentOfTotal = ((item.total / totalCount) * 100).toFixed(1);
-            
-            productItem.innerHTML = `
-                <div class="product-type">${item.type}</div>
-                <div class="product-count">${item.total}件 <span class="product-percent">(${percentOfTotal}%)</span></div>
-                <div class="product-amount">¥${item.salary.toFixed(2)}</div>
-            `;
-            container.appendChild(productItem);
-        });
+        productStats[record.type].totalCount += record.count;
+        productStats[record.type].totalAmount += record.count * record.price;
+    });
+    
+    // 将对象转换为数组并按总数量排序
+    const statsArray = Object.values(productStats).sort((a, b) => b.totalCount - a.totalCount);
+    
+    // 创建产品统计表格
+    const table = document.createElement('table');
+    table.className = 'table table-striped';
+    
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>产品型号</th>
+            <th>总数量</th>
+            <th>总金额</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    const tbody = document.createElement('tbody');
+    
+    statsArray.forEach(stat => {
+        const row = document.createElement('tr');
         
-        // 添加总计行
-        const totalRow = document.createElement('div');
-        totalRow.className = 'product-stat-total';
-        totalRow.innerHTML = `
-            <div class="product-type">总计</div>
-            <div class="product-count">${totalCount}件</div>
-            <div class="product-amount">¥${totalAmount.toFixed(2)}</div>
-        `;
-        container.appendChild(totalRow);
+        const typeTd = document.createElement('td');
+        typeTd.textContent = stat.type;
+        row.appendChild(typeTd);
         
-    } catch (error) {
-        console.error('渲染产品统计出错:', error);
-        const errorMessage = document.createElement('div');
-        errorMessage.className = 'no-records-message';
-        errorMessage.textContent = '统计数据出错';
-        container.appendChild(errorMessage);
-    }
-}
-
-// 格式化简短日期（如：2025-03-09）
-function formatShortDate(dateStr) {
-    return dateStr; // 保留完整日期格式
+        const countTd = document.createElement('td');
+        countTd.textContent = stat.totalCount;
+        row.appendChild(countTd);
+        
+        const amountTd = document.createElement('td');
+        amountTd.textContent = `¥${stat.totalAmount.toFixed(2)}`;
+        row.appendChild(amountTd);
+        
+        tbody.appendChild(row);
+    });
+    
+    table.appendChild(tbody);
+    container.appendChild(table);
 }

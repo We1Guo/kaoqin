@@ -1,0 +1,29 @@
+/* 修复删除按钮文字颜色 */
+.btn-danger, .btn-danger:hover, .btn-danger:focus, .btn-danger:active {
+    color: white !important; /* 强制文字颜色为白色 */
+}
+
+/* 图例文字在移动设备上的样式 */
+@media (max-width: 768px) {
+    /* 针对图例容器的样式 */
+    .calendar-tips {
+        font-size: 0.75rem; /* 缩小字体大小 */
+        display: flex;
+        justify-content: center;
+        flex-wrap: nowrap; /* 防止换行 */
+        white-space: nowrap; /* 防止文字内部换行 */
+        overflow-x: auto; /* 如果内容过长允许水平滚动 */
+        padding-bottom: 8px; /* 为滚动条留出空间 */
+    }
+    
+    /* 图例项样式 */
+    .tip-item {
+        margin-right: 5px !important; /* 减小图例项之间的间距 */
+        margin-left: 5px !important;
+    }
+    
+    /* 图例文字样式 */
+    .tip-text {
+        font-size: 0.7rem; /* 进一步缩小文字 */
+    }
+} 
