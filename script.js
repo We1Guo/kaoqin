@@ -17,16 +17,16 @@ let settings = JSON.parse(localStorage.getItem('settings')) || {
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
     try {
-        // 初始化页面
-        updateTodayDate();
-        renderCalendar();
-        initStatsSelectors();
+    // 初始化页面
+    updateTodayDate();
+    renderCalendar();
+    initStatsSelectors();
         updateStats(); // 这会默认初始化考勤薪资统计
-        loadSettings();
+    loadSettings();
         initPieceworkSelectors(); // 初始化计件薪资选择器
-        
-        // 初始化模态框
-        const dayDetailModal = new bootstrap.Modal(document.getElementById('dayDetailModal'));
+    
+    // 初始化模态框
+    const dayDetailModal = new bootstrap.Modal(document.getElementById('dayDetailModal'));
         
         // 获取类型切换按钮
         const attendanceBtn = document.getElementById('attendanceTypeBtn');
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('attendanceStatsSection').style.display = 'block';
         document.getElementById('pieceworkStatsSection').style.display = 'none';
         
-        // 初始化统计报表的工资类型切换按钮 - 使用一次性函数防止闭包问题
+        // 初始化统计报表的工资类型切换按钮
         attendanceBtn.addEventListener('click', function() {
             toggleSalaryTypeDisplay('attendance');
         });
@@ -53,23 +53,23 @@ document.addEventListener('DOMContentLoaded', function() {
         pieceworkBtn.addEventListener('click', function() {
             toggleSalaryTypeDisplay('piecework');
         });
-        
-        // 绑定导航切换事件
-        document.getElementById('calendarTab').addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('calendarPage');
-        });
-        
-        document.getElementById('statsTab').addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('statsPage');
-            updateStats();
-        });
-        
-        document.getElementById('settingsTab').addEventListener('click', (e) => {
-            e.preventDefault();
-            showPage('settingsPage');
-        });
+    
+    // 绑定导航切换事件
+    document.getElementById('calendarTab').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPage('calendarPage');
+    });
+    
+    document.getElementById('statsTab').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPage('statsPage');
+        updateStats();
+    });
+    
+    document.getElementById('settingsTab').addEventListener('click', (e) => {
+        e.preventDefault();
+        showPage('settingsPage');
+    });
         
         // 绑定计件薪资标签页点击事件
         document.getElementById('pieceworkTab').addEventListener('click', (e) => {
@@ -80,31 +80,61 @@ document.addEventListener('DOMContentLoaded', function() {
             // 刷新显示
             showTodayPieceworkRecords();
         });
-        
-        // 绑定月份切换
-        document.getElementById('prevMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        });
-        
-        document.getElementById('nextMonth').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
-        
-        // 绑定打卡按钮
-        document.getElementById('checkIn').addEventListener('click', checkInOut);
-        document.getElementById('recordOvertime').addEventListener('click', () => saveOvertime(true));
-        document.getElementById('recordLeave').addEventListener('click', () => saveOvertime(false));
-        
-        // 绑定设置保存
-        document.getElementById('saveSettings').addEventListener('click', saveSettings);
-        
+    
+    // 绑定月份切换
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+    
+    // 绑定打卡按钮
+    document.getElementById('checkIn').addEventListener('click', checkInOut);
+    document.getElementById('recordOvertime').addEventListener('click', () => saveOvertime(true));
+    document.getElementById('recordLeave').addEventListener('click', () => saveOvertime(false));
+    
+    // 绑定设置保存
+    document.getElementById('saveSettings').addEventListener('click', saveSettings);
+    
         // 绑定数据统计选择器 - 移除自动更新，改为只通过查询统计按钮触发
         // 移除年份和月份选择器的自动更新监听器
         // document.getElementById('statsYear').addEventListener('change', updateStats);
         // document.getElementById('statsMonth').addEventListener('change', updateStats);
-        document.getElementById('generateStats').addEventListener('click', generateCustomStats);
+        document.getElementById('generateStats').addEventListener('click', function() {
+            const yearSelect = document.getElementById('statsYear');
+            const monthSelect = document.getElementById('statsMonth');
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedMonth = monthSelect.value;
+            
+            if (selectedMonth === 'all') {
+                // 全年统计
+                const startDate = new Date(selectedYear, 0, 1);
+                const endDate = new Date(selectedYear, 11, 31);
+                updateStatsForPeriod(startDate, endDate, `${selectedYear}年全年`, 'attendance'); // 更新考勤数据
+                updatePieceworkStatsForPeriod(startDate, endDate); // 更新计件数据
+            } else {
+                // 月度统计
+                const monthIndex = parseInt(selectedMonth);
+                const startDate = new Date(selectedYear, monthIndex, 1);
+                const endDate = new Date(selectedYear, monthIndex + 1, 0); // 当月最后一天
+                updateStatsForPeriod(startDate, endDate, `${selectedYear}年${monthIndex + 1}月`, 'attendance'); // 更新考勤数据
+                updatePieceworkStatsForPeriod(startDate, endDate); // 更新计件数据
+            }
+            
+            // 根据是否有计件记录来显示或隐藏计件薪资统计区域
+            const totalPiecework = document.getElementById('reportPieceworkTotal').textContent;
+            const hasPieceworkRecords = totalPiecework && totalPiecework !== '0';
+            
+            // 始终显示考勤统计
+            document.getElementById('attendanceStatsSection').style.display = 'block';
+            
+            // 只有在有计件记录时才显示计件统计
+            document.getElementById('pieceworkStatsSection').style.display = hasPieceworkRecords ? 'block' : 'none';
+        });
         
         // 绑定计件薪资相关事件
         document.getElementById('savePiecework').addEventListener('click', savePieceworkRecord);
@@ -374,20 +404,20 @@ function saveOvertime(isOvertime) {
                 attendanceData[dateStr].leave = Math.abs(hours); // 修复：请假时间必须用正值
             } else {
                 // 现有请假记录，新增加班记录
-                attendanceData[dateStr].overtime = hours;
+    attendanceData[dateStr].overtime = hours;
                 attendanceData[dateStr].leave = Math.abs(existingOvertime); // 请假时记录为正值
             }
-            
-            localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
-            renderCalendar();
-            updateStats();
-            
+    
+    localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+    renderCalendar();
+    updateStats();
+    
             const message = isOvertime ? 
-                `加班时间记录成功: ${hours}小时` : 
-                `请假时间记录成功: ${Math.abs(hours)}小时`;
-                
-            alert(message);
-            hoursInput.value = '';
+        `加班时间记录成功: ${hours}小时` : 
+        `请假时间记录成功: ${Math.abs(hours)}小时`;
+        
+    alert(message);
+    hoursInput.value = '';
             return;
         }
     }
@@ -395,9 +425,9 @@ function saveOvertime(isOvertime) {
     // 正常情况：记录加班或请假
     attendanceData[dateStr].overtime = hours;
     
-    localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
-    renderCalendar();
-    updateStats();
+        localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+        renderCalendar();
+        updateStats();
     
     const message = hours >= 0 ? 
         `加班时间记录成功: ${hours}小时` : 
@@ -413,9 +443,12 @@ function recordPastOvertime(date, isOvertime, hours = null) {
     
     // 如果未提供小时数，从模态框输入获取
     if (hours === null) {
-        hours = parseFloat(isOvertime ? 
+        const inputValue = isOvertime ? 
             document.getElementById('modalOvertimeHours').value : 
-            document.getElementById('modalLeaveHours').value);
+            document.getElementById('modalLeaveHours').value;
+        
+        // 确保输入值是数字
+        hours = parseFloat(inputValue);
     }
     
     if (isNaN(hours)) {
@@ -438,6 +471,12 @@ function recordPastOvertime(date, isOvertime, hours = null) {
             }
             localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
             alert('记录已清除！');
+            
+            // 更新日历和模态框
+            renderCalendar();
+            if (currentDetailDate) {
+                showDayDetails(currentDetailDate);
+            }
         }
         return;
     }
@@ -488,6 +527,11 @@ function recordPastOvertime(date, isOvertime, hours = null) {
     
     // 更新日历视图
     renderCalendar();
+    
+    // 更新模态框显示
+    if (currentDetailDate) {
+        showDayDetails(currentDetailDate);
+    }
     
     const message = isOvertime ? 
         `已记录 ${hours} 小时加班！` : 
@@ -553,6 +597,71 @@ function showDayDetails(date) {
         // 设置模态框标题
         document.getElementById('modalTitle').textContent = dateDisplay + ' 详情';
         
+        // 更新打卡状态文本
+        const statusElement = document.querySelector('.modal-body p');
+        
+        // 隐藏所有详细信息
+        document.getElementById('checkInTimeDisplay').style.display = 'none';
+        document.getElementById('overtimeDisplay').style.display = 'none';
+        document.getElementById('leaveDisplay').style.display = 'none';
+        
+        if (statusElement) {
+            if (attendanceData[dateStr] && attendanceData[dateStr].checkedIn) {
+                statusElement.innerHTML = '打卡状态: <span style="color: green;">已打卡</span>';
+                if (attendanceData[dateStr].isMakeup) {
+                    statusElement.innerHTML += ' <span style="background-color: #ffc107; color: black; padding: 2px 5px; border-radius: 3px; font-size: 0.8em;">补</span>';
+                }
+                
+                // 显示打卡时间
+                const checkInTimeDisplay = document.getElementById('checkInTimeDisplay');
+                const checkInTimeSpan = checkInTimeDisplay.querySelector('span');
+                checkInTimeSpan.textContent = attendanceData[dateStr].time || '';
+                checkInTimeDisplay.style.display = 'block';
+                
+                // 检查加班记录
+                let hasOvertime = false;
+                let overtimeHours = 0;
+                
+                if (attendanceData[dateStr].overtime && parseFloat(attendanceData[dateStr].overtime) > 0) {
+                    hasOvertime = true;
+                    overtimeHours = parseFloat(attendanceData[dateStr].overtime);
+                }
+                
+                // 检查请假记录 - 可能在overtime为负值或leave属性中
+                let hasLeave = false;
+                let leaveHours = 0;
+                
+                if (attendanceData[dateStr].overtime && parseFloat(attendanceData[dateStr].overtime) < 0) {
+                    hasLeave = true;
+                    leaveHours = Math.abs(parseFloat(attendanceData[dateStr].overtime));
+                }
+                
+                if (attendanceData[dateStr].leave && parseFloat(attendanceData[dateStr].leave) > 0) {
+                    hasLeave = true;
+                    leaveHours = parseFloat(attendanceData[dateStr].leave);
+                }
+                
+                // 显示加班情况
+                if (hasOvertime) {
+                    const overtimeDisplay = document.getElementById('overtimeDisplay');
+                    const overtimeSpan = overtimeDisplay.querySelector('span');
+                    overtimeSpan.textContent = overtimeHours;
+                    overtimeDisplay.style.display = 'block';
+                }
+                
+                // 显示请假情况
+                if (hasLeave) {
+                    const leaveDisplay = document.getElementById('leaveDisplay');
+                    const leaveSpan = leaveDisplay.querySelector('span');
+                    leaveSpan.textContent = leaveHours;
+                    leaveDisplay.style.display = 'block';
+                }
+            } else {
+                statusElement.innerHTML = '打卡状态: <span style="color: red;">未打卡</span>';
+            }
+        }
+        
+        // 仍然维护dayDetails元素以便与现有代码兼容
         const dayDetails = document.getElementById('dayDetails');
         let detailsHTML = '';
         
@@ -618,12 +727,6 @@ function showDayDetails(date) {
         }
         if (document.getElementById('modalLeaveHours')) {
             document.getElementById('modalLeaveHours').value = '';
-        }
-        
-        // 为删除按钮添加文字
-        const deleteBtn = document.getElementById('modalDeleteAttendance');
-        if (deleteBtn && deleteBtn.innerHTML.indexOf('删除') === -1) {
-            deleteBtn.innerHTML = '<i class="bi bi-trash"></i> 删除记录';
         }
         
         // 重新绑定模态框按钮事件
@@ -752,6 +855,14 @@ function updateStats() {
     const attendanceBtn = document.getElementById('attendanceTypeBtn');
     const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
     
+    if (attendanceBtn && pieceworkBtn) {
+        // 设置UI显示为考勤薪资
+        attendanceBtn.classList.add('btn-primary');
+        attendanceBtn.classList.remove('btn-outline-primary');
+        pieceworkBtn.classList.add('btn-outline-primary');
+        pieceworkBtn.classList.remove('btn-primary');
+    }
+    
     console.log(`初始化统计: 年份=${year}, 月份=${monthValue}`);
     
     // 清除之前存储的日期范围，确保重新计算
@@ -771,12 +882,6 @@ function updateStats() {
         updatePieceworkStatsForPeriod(year, month);
     }
     
-    // 设置UI显示为考勤薪资
-    attendanceBtn.classList.add('btn-primary');
-    attendanceBtn.classList.remove('btn-outline-primary');
-    pieceworkBtn.classList.add('btn-outline-primary');
-    pieceworkBtn.classList.remove('btn-primary');
-    
     // 显示考勤薪资区域，隐藏计件薪资区域
     document.getElementById('attendanceStatsSection').style.display = 'block';
     document.getElementById('pieceworkStatsSection').style.display = 'none';
@@ -787,19 +892,19 @@ function updateStatsForPeriod(startDate, endDate, periodLabel, salaryType) {
     // 只更新数据，不切换UI
     if (salaryType === 'attendance') {
         // 计算考勤工资
-        let workDays = 0;
+    let workDays = 0;
         let overtimeHours = 0;
         let leaveHours = 0;
         const attendanceRecords = [];
-        
-        // 这里使用实际考勤数据进行统计
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            const dateStr = formatDateString(d);
+    
+    // 这里使用实际考勤数据进行统计
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const dateStr = formatDateString(d);
             const attendance = attendanceData[dateStr];
-            
+        
             if (attendance && attendance.checkedIn) {
-                workDays++;
-                
+            workDays++;
+            
                 // 检查overtime属性中的加班或请假记录
                 if (attendance.overtime) {
                     const overtime = parseFloat(attendance.overtime);
@@ -819,28 +924,28 @@ function updateStatsForPeriod(startDate, endDate, periodLabel, salaryType) {
                 }
                 
                 attendanceRecords.push({
-                    date: dateStr,
+                date: dateStr,
                     time: attendance.time,
                     overtime: attendance.overtime || 0,
                     leave: attendance.leave || 0,
                     isMakeup: attendance.isMakeup || false
-                });
-            }
+            });
         }
-        
+    }
+    
         // 计算出勤工资
         const attendanceSalary = calculateSalary(workDays, overtimeHours, leaveHours);
-        
+    
         // 更新考勤统计UI
-        document.getElementById('workDays').textContent = workDays;
+    document.getElementById('workDays').textContent = workDays;
         
         // 更新加班/请假时长显示
         const overtimeText = `<span class="text-success">${overtimeHours}小时</span>/<span class="text-danger">${leaveHours}小时</span>`;
         document.getElementById('overtimeHoursTotal').innerHTML = overtimeText;
         
         document.getElementById('attendanceSalary').textContent = `¥${attendanceSalary.toFixed(2)}`;
-        
-        // 渲染考勤记录表
+    
+    // 渲染考勤记录表
         renderAttendanceRecords(attendanceRecords);
     } 
     else if (salaryType === 'piecework') {
@@ -1227,45 +1332,6 @@ function updatePieceworkStatsForPeriod(startDate, endDate) {
     }
 }
 
-// 添加在统计页面切换考勤薪资和计件薪资的函数
-function toggleSalaryTypeDisplay(type) {
-    const attendanceBtn = document.getElementById('attendanceTypeBtn');
-    const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
-    const attendanceStatsSection = document.getElementById('attendanceStatsSection');
-    const pieceworkStatsSection = document.getElementById('pieceworkStatsSection');
-    
-    if (type === 'attendance') {
-        // 切换到考勤薪资
-        attendanceBtn.classList.add('btn-primary');
-        attendanceBtn.classList.remove('btn-outline-primary');
-        pieceworkBtn.classList.add('btn-outline-primary');
-        pieceworkBtn.classList.remove('btn-primary');
-        
-        attendanceStatsSection.style.display = 'block';
-        pieceworkStatsSection.style.display = 'none';
-    } else if (type === 'piecework') {
-        // 切换到计件薪资
-        pieceworkBtn.classList.add('btn-primary');
-        pieceworkBtn.classList.remove('btn-outline-primary');
-        attendanceBtn.classList.add('btn-outline-primary');
-        attendanceBtn.classList.remove('btn-primary');
-        
-        pieceworkStatsSection.style.display = 'block';
-        attendanceStatsSection.style.display = 'none';
-        
-        // 生成当前选择的统计
-        const year = document.getElementById('statsYear').value;
-        const month = document.getElementById('statsMonth').value;
-        
-        // 更新计件薪资统计
-        if (month === 'all') {
-            updatePieceworkStatsForPeriod(year, 'all');
-        } else {
-            updatePieceworkStatsForPeriod(year, month);
-        }
-    }
-}
-
 // 切换计件薪资显示的明细和产品统计视图
 function togglePieceworkView(type) {
     const detailBtn = document.getElementById('pieceworkDetailBtn');
@@ -1418,4 +1484,43 @@ function updateProductStats(records) {
     
     table.appendChild(tbody);
     container.appendChild(table);
+}
+
+// 添加在统计页面切换考勤薪资和计件薪资的函数
+function toggleSalaryTypeDisplay(type) {
+    const attendanceBtn = document.getElementById('attendanceTypeBtn');
+    const pieceworkBtn = document.getElementById('pieceworkTypeBtn');
+    const attendanceStatsSection = document.getElementById('attendanceStatsSection');
+    const pieceworkStatsSection = document.getElementById('pieceworkStatsSection');
+    
+    if (type === 'attendance') {
+        // 切换到考勤薪资
+        attendanceBtn.classList.add('btn-primary');
+        attendanceBtn.classList.remove('btn-outline-primary');
+        pieceworkBtn.classList.add('btn-outline-primary');
+        pieceworkBtn.classList.remove('btn-primary');
+        
+        attendanceStatsSection.style.display = 'block';
+        pieceworkStatsSection.style.display = 'none';
+    } else if (type === 'piecework') {
+        // 切换到计件薪资
+        pieceworkBtn.classList.add('btn-primary');
+        pieceworkBtn.classList.remove('btn-outline-primary');
+        attendanceBtn.classList.add('btn-outline-primary');
+        attendanceBtn.classList.remove('btn-primary');
+        
+        pieceworkStatsSection.style.display = 'block';
+        attendanceStatsSection.style.display = 'none';
+        
+        // 生成当前选择的统计
+        const year = document.getElementById('statsYear').value;
+        const month = document.getElementById('statsMonth').value;
+        
+        // 更新计件薪资统计
+        if (month === 'all') {
+            updatePieceworkStatsForPeriod(year, 'all');
+        } else {
+            updatePieceworkStatsForPeriod(year, month);
+        }
+    }
 }
